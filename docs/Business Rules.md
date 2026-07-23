@@ -2,6 +2,10 @@
 
 ---
 
+> **Note:** This document describes all planned business rules. As of July 2026, only the following rules are implemented: Customer rules, Route rules, basic Token Book rules. See the Implementation Status section in Project Overview for details.
+
+---
+
 # 1. Introduction
 
 Business Rules define the operational logic that governs how the Milk Distribution ERP behaves. These rules ensure that every module follows the actual workflow of the milk distribution business while maintaining data consistency, operational flexibility, and financial accountability.

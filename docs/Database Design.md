@@ -2,6 +2,10 @@
 
 ---
 
+> **Note:** This document describes the complete planned database schema. As of July 2026, the following tables are implemented: users, customers, routes, milk_types, employees, leave_requests, token_books, cash_sales, milk_allocations, reconciliation. See the Implementation Status section in Project Overview for details.
+
+---
+
 # 1. Introduction
 
 The database is the foundation of the Milk Distribution ERP. Every business operation performed within the ERP is stored in a structured relational database designed specifically for the workflow of a milk distribution company.

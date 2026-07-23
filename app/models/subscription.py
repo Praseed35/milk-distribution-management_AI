@@ -10,9 +10,9 @@ from sqlalchemy.sql import func
 from app.database import Base
 
 
-class Customer(Base):
+class Subscription(Base):
 
-    __tablename__ = "customers"
+    __tablename__ = "subscriptions"
 
     id = Column(
         Integer,
@@ -20,37 +20,45 @@ class Customer(Base):
         index=True
     )
 
-    customer_code = Column(
-        String(20),
-        unique=True,
-        nullable=False
-    )
-
-    customer_name = Column(
-        String(100),
-        nullable=False
-    )
-
-    primary_phone = Column(
-        String(15),
-        unique=True,
-        nullable=False
-    )
-
-    alternate_phone = Column(
-        String(15),
-        nullable=True
-    )
-
-    address = Column(
-        String(255),
-        nullable=True
-    )
-
-    route_id = Column(
+    customer_id = Column(
         Integer,
-        ForeignKey("routes.id"),
+        ForeignKey("customers.id"),
         nullable=False
+    )
+
+    milk_type_id = Column(
+        Integer,
+        ForeignKey("milk_types.id"),
+        nullable=False
+    )
+
+    morning_quantity = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    evening_quantity = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    status = Column(
+        String(20),
+        default="ACTIVE",
+        nullable=False
+    )
+
+    start_date = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
+
+    end_date = Column(
+        DateTime(timezone=True),
+        nullable=True
     )
 
     remarks = Column(
@@ -75,12 +83,11 @@ class Customer(Base):
         onupdate=func.now()
     )
 
-    route = relationship(
-        "Route",
-        back_populates="customers"
+    customer = relationship(
+        "Customer",
+        back_populates="subscriptions"
     )
 
-    subscriptions = relationship(
-        "Subscription",
-        back_populates="customer"
+    milk_type = relationship(
+        "MilkType"
     )

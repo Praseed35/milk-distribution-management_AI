@@ -2,6 +2,10 @@
 
 ---
 
+> **Note:** This document describes the complete testing strategy. As of July 2026, testing has not been formally implemented. See the Implementation Status section in Project Overview for details.
+
+---
+
 # 1. Introduction
 
 The Testing Strategy and Quality Assurance (QA) module ensures that the Milk Distribution ERP functions correctly, reliably, and securely before deployment.

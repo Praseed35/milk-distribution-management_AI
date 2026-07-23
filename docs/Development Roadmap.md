@@ -2,6 +2,10 @@
 
 ---
 
+> **Note:** This document describes the complete development roadmap. As of July 2026, Sprint 1 is complete, Sprint 4 and 5 are in progress, and Sprints 2, 3, 6-10 are not started. See the Current Sprint Progress section for details.
+
+---
+
 # 1. Introduction
 
 The Development Roadmap defines the planned implementation strategy for the Milk Distribution ERP. It divides the project into manageable development phases (Sprints), allowing each business module to be designed, implemented, tested, and integrated systematically.
@@ -109,7 +113,7 @@ Develop the foundation of the ERP.
 
 ---
 
-# Sprint 2 – Subscription Management
+# Sprint 2 – Subscription Management ✅ Complete
 
 ### Objective
 
@@ -117,23 +121,23 @@ Manage customer subscriptions.
 
 ### Modules
 
-* Customer Subscription
-* Delivery Exceptions
+* Customer Subscription ✅
+* Delivery Exceptions ❌ (Not Started)
 
 ### Major Features
 
-* Morning Subscription
-* Evening Subscription
-* Multiple Milk Types
-* Vacation Requests
-* No Milk
-* Extra Milk
-* Resume Delivery
+* Morning Subscription ✅
+* Evening Subscription ✅
+* Multiple Milk Types ✅
+* Vacation Requests ❌
+* No Milk ❌
+* Extra Milk ❌
+* Resume Delivery ❌
 
 ### Deliverables
 
-* Subscription Module
-* Delivery Exception Module
+* Subscription Module ✅
+* Delivery Exception Module ❌
 
 ---
 
@@ -518,6 +522,80 @@ Major project milestones include:
 * Production Deployment
 
 Each milestone represents a measurable project achievement.
+
+---
+
+# 10.1 Current Sprint Progress (As of July 2026)
+
+## Sprint 1 – Master Data Management ✅ Complete
+
+* Authentication (JWT Login) ✅
+* User Management ✅
+* Customer Management ✅
+* Route Management ✅
+* Milk Type Management ✅
+* Employee Management ✅
+
+## Sprint 2 – Subscription Management ✅ Complete
+
+* Customer Subscription ✅
+* Delivery Exceptions ❌
+
+## Sprint 3 – Daily Delivery Management ⏳ Not Started
+
+* Daily Delivery Generation ❌
+* Milk Dispatch ❌
+* Delivery Lists ❌
+* Shift Management ❌
+
+## Sprint 4 – Token Management 🔄 In Progress
+
+* Token Book Management (Partial) 🔄
+* Token Identity ❌
+* Token Registration ❌
+* Token Ledger ❌
+
+## Sprint 5 – Reconciliation 🔄 In Progress
+
+* Reconciliation Service (Partial) 🔄
+* Cash Sales (Partial) 🔄
+* Milk Allocation (Partial) 🔄
+* Route Closing ❌
+
+## Sprint 6 – Payment Management ❌ Not Started
+
+* Token Book Payments ❌
+* Outstanding Payments ❌
+* Customer Payments ❌
+* Cash Collections ❌
+
+## Sprint 7 – Reports and Analytics ❌ Not Started
+
+* Dashboard (Partial) 🔄
+* Customer Reports ❌
+* Route Reports ❌
+* Delivery Reports ❌
+* Token Reports ❌
+* Payment Reports ❌
+
+## Sprint 8 – AI Business Intelligence ❌ Not Started
+
+* AI Reports ❌
+* Customer Analysis ❌
+* Payment Analysis ❌
+* Delivery Analysis ❌
+* Demand Forecasting ❌
+
+## Sprint 9 – Frontend Development ❌ Not Started
+
+* React Frontend ❌
+
+## Sprint 10 – Testing and Deployment ❌ Not Started
+
+* Unit Testing ❌
+* API Testing ❌
+* Integration Testing ❌
+* Deployment ❌
 
 ---
 

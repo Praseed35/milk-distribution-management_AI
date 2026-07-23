@@ -2,6 +2,10 @@
 
 ---
 
+> **Note:** This document describes the complete planned API. As of July 2026, only the following modules are implemented: Authentication, Users, Customers, Routes, Milk Types, Employees, Token Books (partial), Cash Sales (partial), Milk Allocation (partial). See the Implementation Status section in Project Overview for details.
+
+---
+
 # 1. Introduction
 
 The Milk Distribution ERP exposes a RESTful API developed using FastAPI. The API provides communication between the frontend, mobile applications, and backend services.

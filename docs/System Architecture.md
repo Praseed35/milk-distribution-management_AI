@@ -2,6 +2,10 @@
 
 ---
 
+> **Note:** This document describes the complete planned architecture. As of July 2026, the following layers are implemented: Router, Service, Schema, Model, Authentication, Exception layers. See the Current Implementation Status section for details.
+
+---
+
 # 1. Introduction
 
 The Milk Distribution ERP follows a modular, domain-driven architecture that models the real operational workflow of a milk distribution business. Instead of organizing the application around database tables or simple CRUD operations, the system is divided into independent business domains such as customer management, delivery planning, token accounting, finance, and reporting.
@@ -574,7 +578,55 @@ Logs provide complete traceability.
 
 ---
 
-# 22. Future Scalability
+# 22. Current Implementation Status (As of July 2026)
+
+The following layers and modules are currently implemented in the codebase:
+
+## Implemented Application Layers
+
+* Router Layer (FastAPI endpoints)
+* Service Layer (Business logic)
+* Schema Layer (Pydantic models)
+* Model Layer (SQLAlchemy ORM)
+* Authentication Layer (JWT)
+* Exception Layer (Custom exceptions)
+
+## Implemented Business Modules
+
+| Module | Models | Routers | Services | Status |
+|--------|--------|---------|----------|--------|
+| Authentication | User | auth | auth_service | Complete |
+| Users | User | users | user_service | Complete |
+| Customers | Customer | customers | customer_service | Complete |
+| Routes | Route | routes | route_service | Complete |
+| Milk Types | MilkType | milk_types | milk_type_service | Complete |
+| Employees | Employee | employees | - | Complete |
+| Subscriptions | Subscription | subscriptions | subscription_service | Complete |
+| Token Books | TokenBook | token_books | token_service | Partial |
+| Cash Sales | CashSale | cash_sales | - | Partial |
+| Milk Allocation | MilkAllocation | milk_allocation | delivery_service | Partial |
+| Reconciliation | Reconciliation | - | reconciliation_service | Partial |
+
+## Not Yet Implemented
+
+* Customer Subscriptions (No model/router/service)
+* Daily Delivery Planning (No model/router/service)
+* Token Ledger (No model/router/service)
+* Payment Management (No model/router/service)
+* Reports API (Router exists, service incomplete)
+* AI Reports (Not started)
+* Frontend (Not started)
+
+## Folder Structure Notes
+
+* `app/repositories/` folder exists but is currently empty
+* `app/common/` folder exists for shared components
+* `app/constants/` folder contains roles, shifts, statuses
+* `app/exceptions/` contains module-specific exceptions
+
+---
+
+# 23. Future Scalability
 
 The architecture supports future enhancements without major redesign.
 
