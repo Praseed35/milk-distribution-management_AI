@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models.customer import Customer
 from app.models.milk_type import MilkType
+from app.models.route import Route
 from app.models.subscription import Subscription
 
 from app.schemas.subscription import SubscriptionCreate, SubscriptionUpdate
@@ -91,26 +92,59 @@ def create(
 
 def get_all(
     db: Session
-) -> list[Subscription]:
+) -> list[dict]:
 
-    subscriptions = (
-        db.query(Subscription)
-        .filter(
-            Subscription.is_active == True
+    results = (
+        db.query(
+            Subscription.id,
+            Subscription.customer_id,
+            Customer.customer_code,
+            Customer.customer_name,
+            Route.route_name,
+            MilkType.milk_name.label('milk_type_name'),
+            MilkType.volume_ml.label('milk_type_volume'),
+            Subscription.morning_quantity,
+            Subscription.evening_quantity,
+            Subscription.status,
+            Subscription.is_active
         )
+        .join(Customer, Subscription.customer_id == Customer.id)
+        .join(Route, Customer.route_id == Route.id)
+        .join(MilkType, Subscription.milk_type_id == MilkType.id)
+        .filter(Subscription.is_active == True)
         .all()
     )
 
-    return subscriptions
+    return results
 
 
 def get_by_id(
         db: Session,
         subscription_id: int
-) -> Subscription:
+) -> dict:
 
-    subscription = (
-        db.query(Subscription)
+    result = (
+        db.query(
+            Subscription.id,
+            Subscription.customer_id,
+            Customer.customer_code,
+            Customer.customer_name,
+            Customer.primary_phone,
+            MilkType.id.label('milk_type_id'),
+            MilkType.milk_name,
+            MilkType.volume_ml,
+            Subscription.morning_quantity,
+            Subscription.evening_quantity,
+            Subscription.status,
+            Subscription.start_date,
+            Subscription.end_date,
+            Subscription.remarks,
+            Subscription.is_active,
+            Subscription.created_at,
+            Subscription.updated_at
+        )
+        .join(Customer, Subscription.customer_id == Customer.id)
+        .join(MilkType, Subscription.milk_type_id == MilkType.id)
         .filter(
             Subscription.id == subscription_id,
             Subscription.is_active == True
@@ -118,16 +152,38 @@ def get_by_id(
         .first()
     )
 
-    if not subscription:
+    if not result:
         raise SubscriptionNotFoundError()
 
-    return subscription
+    return {
+        'id': result.id,
+        'customer': {
+            'id': result.customer_id,
+            'customer_code': result.customer_code,
+            'customer_name': result.customer_name,
+            'primary_phone': result.primary_phone
+        },
+        'milk_type': {
+            'id': result.milk_type_id,
+            'milk_name': result.milk_name,
+            'volume_ml': result.volume_ml
+        },
+        'morning_quantity': result.morning_quantity,
+        'evening_quantity': result.evening_quantity,
+        'status': result.status,
+        'start_date': result.start_date,
+        'end_date': result.end_date,
+        'remarks': result.remarks,
+        'is_active': result.is_active,
+        'created_at': result.created_at,
+        'updated_at': result.updated_at
+    }
 
 
 def get_by_customer_id(
         db: Session,
         customer_id: int
-) -> list[Subscription]:
+) -> list[dict]:
 
     customer = (
         db.query(Customer)
@@ -141,8 +197,23 @@ def get_by_customer_id(
     if not customer:
         raise CustomerNotFoundError()
 
-    subscriptions = (
-        db.query(Subscription)
+    results = (
+        db.query(
+            Subscription.id,
+            Subscription.customer_id,
+            Customer.customer_code,
+            Customer.customer_name,
+            Route.route_name,
+            MilkType.milk_name.label('milk_type_name'),
+            MilkType.volume_ml.label('milk_type_volume'),
+            Subscription.morning_quantity,
+            Subscription.evening_quantity,
+            Subscription.status,
+            Subscription.is_active
+        )
+        .join(Customer, Subscription.customer_id == Customer.id)
+        .join(Route, Customer.route_id == Route.id)
+        .join(MilkType, Subscription.milk_type_id == MilkType.id)
         .filter(
             Subscription.customer_id == customer_id,
             Subscription.is_active == True
@@ -150,7 +221,7 @@ def get_by_customer_id(
         .all()
     )
 
-    return subscriptions
+    return results
 
 
 def update_by_id(

@@ -44,3 +44,16 @@ class MilkTypeResponse(MilkTypeBase):
     model_config = ConfigDict(
         from_attributes=True
     )
+
+
+class MilkTypeSummaryResponse(BaseModel):
+
+    id: int
+
+    milk_name: str
+
+    volume_ml: int
+
+    model_config = ConfigDict(
+        from_attributes=True
+    )

@@ -8,7 +8,9 @@ from app.dependencies import get_db
 from app.schemas.subscription import (
     SubscriptionCreate,
     SubscriptionResponse,
-    SubscriptionUpdate
+    SubscriptionUpdate,
+    SubscriptionListResponse,
+    SubscriptionDetailResponse
 )
 
 from app.services import subscription_service
@@ -93,7 +95,7 @@ def create_subscription(
 
 @router.get(
     "/",
-    response_model=list[SubscriptionResponse]
+    response_model=list[SubscriptionListResponse]
 )
 def get_all_subscriptions(
     db: Session = Depends(get_db)
@@ -105,7 +107,7 @@ def get_all_subscriptions(
 
 @router.get(
     "/{subscription_id}",
-    response_model=SubscriptionResponse
+    response_model=SubscriptionDetailResponse
 )
 def get_subscription_by_id(
     subscription_id: int,
@@ -125,7 +127,7 @@ def get_subscription_by_id(
 
 @router.get(
     "/customer/{customer_id}",
-    response_model=list[SubscriptionResponse]
+    response_model=list[SubscriptionListResponse]
 )
 def get_subscriptions_by_customer_id(
     customer_id: int,
