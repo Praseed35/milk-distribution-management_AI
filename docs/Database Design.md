@@ -2,7 +2,7 @@
 
 ---
 
-> **Note:** This document describes the complete planned database schema. As of July 2026, the following tables are implemented: users, customers, routes, milk_types, employees, leave_requests, token_books, cash_sales, milk_allocations, reconciliation. See the Implementation Status section in Project Overview for details.
+> **Note:** This document describes the complete planned database schema. As of July 2026, the following tables are implemented: users, customers, routes, milk_types, employees, subscriptions, delivery_exceptions. See the Implementation Status section in Project Overview for details.
 
 ---
 

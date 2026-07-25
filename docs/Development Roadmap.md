@@ -2,7 +2,7 @@
 
 ---
 
-> **Note:** This document describes the complete development roadmap. As of July 2026, Sprint 1 is complete, Sprint 4 and 5 are in progress, and Sprints 2, 3, 6-10 are not started. See the Current Sprint Progress section for details.
+> **Note:** This document describes the complete development roadmap. As of July 2026, Sprint 1 and Sprint 2 are complete, Sprint 4 and 5 are in progress, and Sprints 3, 6-10 are not started. See the Current Sprint Progress section for details.
 
 ---
 
@@ -122,22 +122,22 @@ Manage customer subscriptions.
 ### Modules
 
 * Customer Subscription ✅
-* Delivery Exceptions ❌ (Not Started)
+* Delivery Exceptions ✅
 
 ### Major Features
 
 * Morning Subscription ✅
 * Evening Subscription ✅
 * Multiple Milk Types ✅
-* Vacation Requests ❌
-* No Milk ❌
-* Extra Milk ❌
-* Resume Delivery ❌
+* Vacation Requests ✅
+* No Milk ✅
+* Extra Milk ✅
+* Resume Delivery ✅
 
 ### Deliverables
 
 * Subscription Module ✅
-* Delivery Exception Module ❌
+* Delivery Exception Module ✅
 
 ---
 
@@ -539,7 +539,7 @@ Each milestone represents a measurable project achievement.
 ## Sprint 2 – Subscription Management ✅ Complete
 
 * Customer Subscription ✅
-* Delivery Exceptions ❌
+* Delivery Exceptions ✅
 
 ## Sprint 3 – Daily Delivery Management ⏳ Not Started
 

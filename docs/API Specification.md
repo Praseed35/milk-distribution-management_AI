@@ -2,7 +2,7 @@
 
 ---
 
-> **Note:** This document describes the complete planned API. As of July 2026, only the following modules are implemented: Authentication, Users, Customers, Routes, Milk Types, Employees, Token Books (partial), Cash Sales (partial), Milk Allocation (partial). See the Implementation Status section in Project Overview for details.
+> **Note:** This document describes the complete planned API. As of July 2026, the following modules are implemented: Authentication, Users, Customers, Routes, Milk Types, Employees, Subscriptions, Delivery Exceptions, Token Books (partial), Cash Sales (partial), Milk Allocation (partial). See the Implementation Status section in Project Overview for details.
 
 ---
 
@@ -283,12 +283,135 @@ Document:
 
 # 9. Delivery Exception Module
 
-Document:
+## Create Delivery Exception
 
-* Add Exception
-* Update Exception
-* Delete Exception
-* Get Exception
+```
+POST /delivery-exceptions/
+```
+
+### Purpose
+
+Creates a temporary delivery exception for a subscription.
+
+### Request Body
+
+* subscription_id
+* exception_type (VACATION | HOLIDAY | NO_MILK)
+* start_date
+* end_date (optional)
+* reason (optional)
+
+### Business Logic
+
+* Verify subscription exists and is active
+* Verify end_date is after start_date
+* Check for overlapping exceptions on the same subscription
+* Save exception
+
+### Response
+
+Returns newly created delivery exception.
+
+### Possible Errors
+
+* Subscription Not Found (404)
+* Inactive Subscription (400)
+* Invalid Date Range (400)
+* Overlapping Exception (400)
+* Validation Error (422)
+
+---
+
+## Get All Delivery Exceptions
+
+```
+GET /delivery-exceptions/
+```
+
+### Purpose
+
+Returns all active delivery exceptions with customer and route information.
+
+---
+
+## Get Delivery Exception By ID
+
+```
+GET /delivery-exceptions/{exception_id}
+```
+
+### Purpose
+
+Returns one delivery exception with full subscription and customer details.
+
+### Possible Errors
+
+* Delivery Exception Not Found (404)
+
+---
+
+## Get Delivery Exceptions By Subscription
+
+```
+GET /delivery-exceptions/subscription/{subscription_id}
+```
+
+### Purpose
+
+Returns all active exceptions for a specific subscription.
+
+### Possible Errors
+
+* Subscription Not Found (404)
+
+---
+
+## Update Delivery Exception
+
+```
+PUT /delivery-exceptions/{exception_id}
+```
+
+### Purpose
+
+Updates delivery exception fields.
+
+### Business Rules
+
+* Exception must exist and be active
+* Updated dates must not overlap with other exceptions
+* End date must be after start date
+
+### Possible Errors
+
+* Delivery Exception Not Found (404)
+* Invalid Date Range (400)
+* Overlapping Exception (400)
+
+---
+
+## Cancel Delivery Exception
+
+```
+DELETE /delivery-exceptions/{exception_id}
+```
+
+### Purpose
+
+Soft cancels a delivery exception.
+
+### Business Logic
+
+Sets
+
+```
+is_active = false
+status = CANCELLED
+```
+
+### Possible Errors
+
+* Delivery Exception Not Found (404)
 
 ---
 

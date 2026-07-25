@@ -151,10 +151,33 @@ Possible exceptions:
 * SubscriptionNotFoundError
 * InvalidShiftError
 * DuplicateSubscriptionError
+* InactiveCustomerError
+* InactiveMilkTypeError
+* InvalidSubscriptionQuantityError
+* SubscriptionAlreadyInactiveError
 
 ---
 
-# 8. Delivery Validation
+# 8. Delivery Exception Validation
+
+The Delivery Exception module validates:
+
+* Subscription exists and is active.
+* End date is after start date (if provided).
+* No overlapping exceptions exist for the same subscription.
+* Exception type is valid.
+
+Possible exceptions:
+
+* DeliveryExceptionNotFoundError
+* InactiveSubscriptionError
+* InvalidDeliveryExceptionDateError
+* DeliveryExceptionOverlapError
+* DeliveryExceptionAlreadyInactiveError
+
+---
+
+# 9. Delivery Validation
 
 Before recording a delivery, the ERP validates:
 
@@ -177,7 +200,7 @@ Possible exceptions:
 
 ---
 
-# 9. Token Validation
+# 10. Token Validation
 
 When registering token sheets, the ERP validates:
 
@@ -203,7 +226,7 @@ Possible exceptions:
 
 ---
 
-# 10. Payment Validation
+# 11. Payment Validation
 
 Before recording a payment, the ERP validates:
 
@@ -220,7 +243,7 @@ Possible exceptions:
 
 ---
 
-# 11. Reconciliation Validation
+# 12. Reconciliation Validation
 
 Before closing a route, the ERP verifies:
 
@@ -255,7 +278,7 @@ Possible exceptions:
 
 ---
 
-# 12. Exception Handling Strategy
+# 13. Exception Handling Strategy
 
 Every exception follows a consistent structure.
 
@@ -273,7 +296,7 @@ The frontend can use the error code to display appropriate messages.
 
 ---
 
-# 13. HTTP Status Codes
+# 14. HTTP Status Codes
 
 The ERP follows standard HTTP status codes.
 
@@ -291,7 +314,7 @@ The ERP follows standard HTTP status codes.
 
 ---
 
-# 14. Custom Business Exceptions
+# 15. Custom Business Exceptions
 
 The ERP defines custom exceptions for business operations.
 
@@ -325,6 +348,20 @@ Examples include:
 
 * SubscriptionNotFoundError
 * DuplicateSubscriptionError
+* InactiveCustomerError
+* InactiveMilkTypeError
+* InvalidSubscriptionQuantityError
+* SubscriptionAlreadyInactiveError
+
+---
+
+### Delivery Exception Exceptions
+
+* DeliveryExceptionNotFoundError
+* InactiveSubscriptionError
+* InvalidDeliveryExceptionDateError
+* DeliveryExceptionOverlapError
+* DeliveryExceptionAlreadyInactiveError
 
 ---
 
@@ -351,7 +388,7 @@ Examples include:
 
 ---
 
-# 15. Error Logging
+# 16. Error Logging
 
 Unexpected system errors are automatically logged.
 
@@ -369,7 +406,7 @@ These logs help developers diagnose and resolve issues without exposing technica
 
 ---
 
-# 16. User-Friendly Error Messages
+# 17. User-Friendly Error Messages
 
 The ERP provides clear and meaningful messages.
 
@@ -387,7 +424,7 @@ The system avoids exposing internal implementation details.
 
 ---
 
-# 17. Future Enhancements
+# 18. Future Enhancements
 
 Future improvements may include:
 
@@ -401,6 +438,6 @@ Future improvements may include:
 
 ---
 
-# 18. Conclusion
+# 19. Conclusion
 
 The Validation and Exception Handling module ensures that only accurate, consistent, and authorized data enters the Milk Distribution ERP. By combining input validation, business rule enforcement, database integrity checks, and structured exception handling, the system prevents invalid operations while maintaining data quality and providing meaningful feedback to users. This foundation improves reliability, simplifies maintenance, and supports the long-term scalability of the ERP.

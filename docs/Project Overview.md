@@ -12,7 +12,7 @@
 
 **Last Updated:** July 2026
 
-> **Note:** This document describes the complete planned system. As of July 2026, the following modules are implemented: Authentication, Users, Customers, Routes, Milk Types, Employees, Token Books (partial), Cash Sales (partial), Milk Allocation (partial). See the Current Implementation Status section for details.
+> **Note:** This document describes the complete planned system. As of July 2026, the following modules are implemented: Authentication, Users, Customers, Routes, Milk Types, Employees, Customer Subscriptions, Delivery Exceptions, Token Books (partial), Cash Sales (partial), Milk Allocation (partial). See the Current Implementation Status section for details.
 
 ---
 
@@ -496,6 +496,7 @@ As of July 2026, the following modules have been implemented:
 * Milk Type Management (CRUD)
 * Employee Management (CRUD, Leave Requests)
 * Customer Subscriptions (CRUD, Customer/MilkType validation, Deactivation/Re-subscribe)
+* Delivery Exceptions (CRUD, Overlap detection, Subscription validation, Vacation/Holiday/NoMilk types)
 
 ## In-Progress Modules
 

@@ -40,8 +40,9 @@ milk-management - AI/
 │   │   ├── roles.py
 │   │   ├── shifts.py
 │   │   └── statuses.py
-│   ├── models/                 # SQLAlchemy ORM models (6 implemented)
+│   ├── models/                 # SQLAlchemy ORM models (7 implemented)
 │   │   ├── customer.py
+│   │   ├── delivery_exception.py
 │   │   ├── employee.py
 │   │   ├── milk_type.py
 │   │   ├── route.py
@@ -50,21 +51,24 @@ milk-management - AI/
 │   ├── schemas/                # Pydantic request/response schemas
 │   │   ├── auth.py
 │   │   ├── customer.py
+│   │   ├── delivery_exception.py
 │   │   ├── employee.py
 │   │   ├── milk_type.py
 │   │   ├── route.py
 │   │   ├── subscription.py
 │   │   └── user.py
-│   ├── routers/                # FastAPI route handlers (6 implemented)
+│   ├── routers/                # FastAPI route handlers (7 implemented)
 │   │   ├── auth.py
 │   │   ├── customers.py
+│   │   ├── delivery_exceptions.py
 │   │   ├── milk_types.py
 │   │   ├── routes.py
 │   │   ├── subscriptions.py
 │   │   └── users.py
-│   ├── services/               # Business logic layer (6 implemented)
+│   ├── services/               # Business logic layer (7 implemented)
 │   │   ├── auth_service.py
 │   │   ├── customer_service.py
+│   │   ├── delivery_exception_service.py
 │   │   ├── milk_type_service.py
 │   │   ├── route_service.py
 │   │   ├── subscription_service.py
@@ -72,6 +76,7 @@ milk-management - AI/
 │   ├── exceptions/             # Custom exception hierarchy
 │   │   ├── base.py
 │   │   ├── customer.py
+│   │   ├── delivery_exception.py
 │   │   ├── milk_type.py
 │   │   ├── route.py
 │   │   ├── subscription.py
@@ -83,7 +88,7 @@ milk-management - AI/
 │   └── main.py                 # FastAPI app creation, router registration
 ├── alembic/                    # Database migration scripts
 │   └── versions/               # 5 migration files (chronological chain)
-├── tests/                      # Pytest test suite (5 test files)
+├── tests/                      # Pytest test suite (6 test files, 170 tests)
 ├── scripts/                    # Seed data and manual test scripts
 ├── docs/                       # Detailed design documentation (16 files)
 ├── .ai/                        # AI knowledge base (this directory)
@@ -99,8 +104,9 @@ milk-management - AI/
 | Route | `route.py` | `route.py` | `route_service.py` | `routes.py` | `route.py` | Yes |
 | Customer | `customer.py` | `customer.py` | `customer_service.py` | `customers.py` | `customer.py` | Yes |
 | MilkType | `milk_type.py` | `milk_type.py` | `milk_type_service.py` | `milk_types.py` | `milk_type.py` | Yes |
-| Employee | `employee.py` | `employee.py` | — | — | — | No |
+| Employee | `employee.py` | `employee.py` | — | `employees.py` | — | Yes |
 | Subscription | `subscription.py` | `subscription.py` | `subscription_service.py` | `subscriptions.py` | `subscription.py` | Yes |
+| DeliveryException | `delivery_exception.py` | `delivery_exception.py` | `delivery_exception_service.py` | `delivery_exceptions.py` | `delivery_exception.py` | Yes |
 
 ## Key Entities (Planned — Files Deleted During Cleanup, Must Be Rebuilt)
 
@@ -133,7 +139,7 @@ The following empty stub files were removed in a codebase cleanup. They must be 
 ## Database
 
 - **PostgreSQL** at `localhost:5432/milk_managemen_ai`
-- 6 tables currently in schema: `users`, `routes`, `customers`, `milk_types`, `employees`, `subscriptions`
+- **6 tables currently in schema:** `users`, `routes`, `customers`, `milk_types`, `employees`, `subscriptions`, `delivery_exceptions`
 - All entities use soft-delete via `is_active` boolean flag
 - Timestamps use `server_default=func.now()` with timezone
 
@@ -147,12 +153,13 @@ The following empty stub files were removed in a codebase cleanup. They must be 
 | `customers` | — | Implemented |
 | `milk_types` | — | Implemented |
 | `subscriptions` | — | Implemented |
+| `delivery_exceptions` | — | Implemented |
 
 No stub/empty routers are registered. Dashboard and reports routers do not exist yet.
 
 ## Current Status
 
-The project is in early-to-mid development. A cleanup pass removed all empty stub files and directories that contained no implementation, leaving a clean codebase with only files that have real content. The core CRUD for master data (routes, customers, milk types) and subscriptions is functional. Authentication/authorization is partially implemented but not enforced on most endpoints. Token management, delivery tracking, reconciliation, reports, and dashboard all need to be built from scratch.
+The project is in mid development. A cleanup pass removed all empty stub files and directories that contained no implementation, leaving a clean codebase with only files that have real content. Sprint 1 (Master Data: routes, customers, milk types, employees, users, auth) and Sprint 2 (Subscriptions + Delivery Exceptions) are complete. 170 automated tests are passing against PostgreSQL. Token management, delivery tracking, reconciliation, reports, and dashboard all need to be built.
 
 ## Running the Application
 

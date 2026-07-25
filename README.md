@@ -6,6 +6,7 @@ A FastAPI-based backend system for managing milk distribution operations.
 
 - **Customer Management** - Registration with auto-generated customer codes, route assignment
 - **Subscription Management** - Link customers to milk types with morning/evening shift quantities
+- **Delivery Exceptions** - Temporary modifications to subscriptions (vacation, no milk, holiday)
 - **Route Management** - Delivery routes that group customers geographically
 - **Milk Type Management** - Product catalog (e.g., "Full Cream Milk 1000ml", "Toned Milk 500ml")
 - **User Authentication** - JWT-based authentication with role-based access control
@@ -100,6 +101,14 @@ app/
 - `POST /subscriptions/` - Create subscription
 - `PUT /subscriptions/{id}` - Update subscription
 - `DELETE /subscriptions/{id}` - Deactivate subscription
+
+### Delivery Exceptions
+- `GET /delivery-exceptions/` - List active delivery exceptions
+- `GET /delivery-exceptions/{id}` - Get exception detail with subscription info
+- `GET /delivery-exceptions/subscription/{id}` - Get exceptions by subscription
+- `POST /delivery-exceptions/` - Create delivery exception
+- `PUT /delivery-exceptions/{id}` - Update delivery exception
+- `DELETE /delivery-exceptions/{id}` - Cancel delivery exception
 
 ## Testing
 

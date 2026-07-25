@@ -2,7 +2,7 @@
 
 ---
 
-> **Note:** This document describes the complete planned architecture. As of July 2026, the following layers are implemented: Router, Service, Schema, Model, Authentication, Exception layers. See the Current Implementation Status section for details.
+> **Note:** This document describes the complete planned architecture. As of July 2026, the following layers are implemented: Router, Service, Schema, Model, Authentication, Exception layers. Sprint 1 (Master Data) and Sprint 2 (Subscriptions + Delivery Exceptions) are complete. See the Current Implementation Status section for details.
 
 ---
 
@@ -602,6 +602,7 @@ The following layers and modules are currently implemented in the codebase:
 | Milk Types | MilkType | milk_types | milk_type_service | Complete |
 | Employees | Employee | employees | - | Complete |
 | Subscriptions | Subscription | subscriptions | subscription_service | Complete |
+| Delivery Exceptions | DeliveryException | delivery_exceptions | delivery_exception_service | Complete |
 | Token Books | TokenBook | token_books | token_service | Partial |
 | Cash Sales | CashSale | cash_sales | - | Partial |
 | Milk Allocation | MilkAllocation | milk_allocation | delivery_service | Partial |
@@ -609,7 +610,6 @@ The following layers and modules are currently implemented in the codebase:
 
 ## Not Yet Implemented
 
-* Customer Subscriptions (No model/router/service)
 * Daily Delivery Planning (No model/router/service)
 * Token Ledger (No model/router/service)
 * Payment Management (No model/router/service)

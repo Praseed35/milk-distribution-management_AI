@@ -52,3 +52,19 @@ class ExceptionStatus(str, Enum):
     COMPLETED = "COMPLETED"
 
     CANCELLED = "CANCELLED"
+
+
+class BookIssueStatus(str, Enum):
+
+    WAITING = "WAITING"
+
+    ACTIVE = "ACTIVE"
+
+    COMPLETED = "COMPLETED"
+
+
+class PaymentMode(str, Enum):
+
+    PREPAID = "PREPAID"
+
+    POSTPAID = "POSTPAID"

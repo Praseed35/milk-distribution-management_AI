@@ -2,7 +2,7 @@
 
 ---
 
-> **Note:** This document describes the complete testing strategy. As of July 2026, testing has not been formally implemented. See the Implementation Status section in Project Overview for details.
+> **Note:** This document describes the complete testing strategy. As of July 2026, 170 automated tests are passing against PostgreSQL, covering Authentication, Users, Customers, Routes, Milk Types, Employees, Subscriptions, and Delivery Exceptions. See the Implementation Status section in Project Overview for details.
 
 ---
 

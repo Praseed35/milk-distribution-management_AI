@@ -16,6 +16,9 @@ from app.models.milk_type import MilkType
 from app.models.employee import Employee
 from app.models.subscription import Subscription
 from app.models.delivery_exception import DeliveryException
+from app.models.token_identity import TokenIdentity
+from app.models.token_book_issue import TokenBookIssue
+from app.models.token_book_payment import TokenBookPayment
 
 ACTUAL_DB_URL = os.getenv(
     "TEST_DB_URL",
@@ -238,3 +241,49 @@ def seed_delivery_exception(db_session, seed_subscription):
     db_session.commit()
     db_session.refresh(exception)
     return exception
+
+
+@pytest.fixture
+def seed_token_identity(db_session, seed_customer, seed_milk_type):
+    identity = TokenIdentity(
+        customer_id=seed_customer.id,
+        milk_type_id=seed_milk_type.id,
+        token_number=1001,
+        is_active=True
+    )
+    db_session.add(identity)
+    db_session.commit()
+    db_session.refresh(identity)
+    return identity
+
+
+@pytest.fixture
+def seed_token_book_issue(db_session, seed_token_identity):
+    issue = TokenBookIssue(
+        token_identity_id=seed_token_identity.id,
+        issue_number=1,
+        current_sheet=0,
+        status="WAITING",
+        is_active=True
+    )
+    db_session.add(issue)
+    db_session.commit()
+    db_session.refresh(issue)
+    return issue
+
+
+@pytest.fixture
+def seed_token_book_payment(db_session, seed_token_book_issue):
+    payment = TokenBookPayment(
+        token_book_issue_id=seed_token_book_issue.id,
+        payment_mode="PREPAID",
+        payment_status="PAID",
+        book_price=500.00,
+        amount_paid=500.00,
+        balance_amount=0,
+        is_active=True
+    )
+    db_session.add(payment)
+    db_session.commit()
+    db_session.refresh(payment)
+    return payment

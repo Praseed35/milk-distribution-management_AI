@@ -17,6 +17,7 @@ from app.routers.milk_types import router as milk_type_router
 from app.routers.subscriptions import router as subscription_router
 from app.routers.employees import router as employee_router
 from app.routers.delivery_exceptions import router as delivery_exception_router
+from app.routers.token_books import router as token_book_router
 
 
 
@@ -32,6 +33,7 @@ app.include_router(milk_type_router)
 app.include_router(subscription_router)
 app.include_router(employee_router)
 app.include_router(delivery_exception_router)
+app.include_router(token_book_router)
 
 @app.get("/")
 def home():
