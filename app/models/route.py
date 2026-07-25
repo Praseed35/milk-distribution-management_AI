@@ -58,3 +58,8 @@ class Route(Base):
         "Customer",
         back_populates="route"
     )
+
+    employees = relationship(
+        "Employee",
+        back_populates="route"
+    )

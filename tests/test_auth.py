@@ -71,6 +71,108 @@ class TestGetMe:
         assert response.status_code == 401
 
 
+class TestChangePassword:
+
+    def test_change_password_success(
+        self, client, auth_headers
+    ):
+        response = client.put(
+            "/auth/change-password",
+            json={
+                "current_password": "admin123",
+                "new_password": "newadmin456",
+                "confirm_password": "newadmin456"
+            },
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        assert response.json()["message"] == "Password changed successfully."
+
+        login_old = client.post(
+            "/auth/login",
+            json={
+                "username": "testadmin",
+                "password": "admin123"
+            }
+        )
+        assert login_old.status_code == 401
+
+        login_new = client.post(
+            "/auth/login",
+            json={
+                "username": "testadmin",
+                "password": "newadmin456"
+            }
+        )
+        assert login_new.status_code == 200
+
+    def test_change_password_wrong_current(
+        self, client, auth_headers
+    ):
+        response = client.put(
+            "/auth/change-password",
+            json={
+                "current_password": "wrongpass",
+                "new_password": "newadmin789",
+                "confirm_password": "newadmin789"
+            },
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+        assert "incorrect" in response.json()["detail"].lower()
+
+    def test_change_password_mismatch_new(
+        self, client, auth_headers
+    ):
+        response = client.put(
+            "/auth/change-password",
+            json={
+                "current_password": "admin123",
+                "new_password": "newpass1",
+                "confirm_password": "newpass2"
+            },
+            headers=auth_headers
+        )
+        assert response.status_code == 422
+
+    def test_change_password_same_as_current(
+        self, client, auth_headers
+    ):
+        response = client.put(
+            "/auth/change-password",
+            json={
+                "current_password": "admin123",
+                "new_password": "admin123",
+                "confirm_password": "admin123"
+            },
+            headers=auth_headers
+        )
+        assert response.status_code == 422
+
+    def test_change_password_no_token(self, client):
+        response = client.put(
+            "/auth/change-password",
+            json={
+                "current_password": "admin123",
+                "new_password": "newpass123",
+                "confirm_password": "newpass123"
+            }
+        )
+        assert response.status_code == 401
+
+    def test_change_password_missing_fields(
+        self, client, auth_headers
+    ):
+        response = client.put(
+            "/auth/change-password",
+            json={
+                "current_password": "admin123"
+            },
+            headers=auth_headers
+        )
+        assert response.status_code == 422
+
+
 class TestOwnerDashboard:
 
     def test_owner_dashboard_success(self, client, auth_headers):

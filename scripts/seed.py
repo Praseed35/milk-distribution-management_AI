@@ -1,3 +1,5 @@
+from sqlalchemy import exists
+
 from app.database import SessionLocal
 from app.core.security import hash_password
 from app.models.user import User
@@ -5,12 +7,16 @@ from app.models.route import Route
 from app.models.customer import Customer
 from app.models.milk_type import MilkType
 from app.models.employee import Employee
+from app.models.subscription import Subscription
 
 
 def seed():
     db = SessionLocal()
 
     try:
+
+        existing_users = db.query(User.username).all()
+        existing_usernames = {u.username for u in existing_users}
 
         users = [
             User(
@@ -37,10 +43,23 @@ def seed():
                 role="OWNER",
                 is_active=True
             ),
+            User(
+                username="employee1",
+                password_hash=hash_password("emp123"),
+                role="EMPLOYEE",
+                is_active=True
+            ),
         ]
-        db.add_all(users)
-        db.commit()
-        print(f"Seeded {len(users)} users")
+        new_users = [u for u in users if u.username not in existing_usernames]
+        if new_users:
+            db.add_all(new_users)
+            db.commit()
+            print(f"Seeded {len(new_users)} new users (skipped {len(users) - len(new_users)} existing)")
+        else:
+            print("All users already exist, skipping")
+
+        existing_milk = db.query(MilkType.milk_name).all()
+        existing_milk_names = {m.milk_name for m in existing_milk}
 
         milk_types = [
             MilkType(
@@ -86,9 +105,16 @@ def seed():
                 is_active=True
             ),
         ]
-        db.add_all(milk_types)
-        db.commit()
-        print(f"Seeded {len(milk_types)} milk types")
+        new_milk = [m for m in milk_types if m.milk_name not in existing_milk_names]
+        if new_milk:
+            db.add_all(new_milk)
+            db.commit()
+            print(f"Seeded {len(new_milk)} new milk types (skipped {len(milk_types) - len(new_milk)} existing)")
+        else:
+            print("All milk types already exist, skipping")
+
+        existing_routes = db.query(Route.route_code).all()
+        existing_route_codes = {r.route_code for r in existing_routes}
 
         routes = [
             Route(
@@ -122,9 +148,16 @@ def seed():
                 is_active=True
             ),
         ]
-        db.add_all(routes)
-        db.commit()
-        print(f"Seeded {len(routes)} routes")
+        new_routes = [r for r in routes if r.route_code not in existing_route_codes]
+        if new_routes:
+            db.add_all(new_routes)
+            db.commit()
+            print(f"Seeded {len(new_routes)} new routes (skipped {len(routes) - len(new_routes)} existing)")
+        else:
+            print("All routes already exist, skipping")
+
+        existing_customers = db.query(Customer.customer_code).all()
+        existing_customer_codes = {c.customer_code for c in existing_customers}
 
         customers = [
             Customer(
@@ -269,57 +302,149 @@ def seed():
                 is_active=True
             ),
         ]
-        db.add_all(customers)
-        db.commit()
-        print(f"Seeded {len(customers)} customers")
+        new_customers = [c for c in customers if c.customer_code not in existing_customer_codes]
+        if new_customers:
+            db.add_all(new_customers)
+            db.commit()
+            print(f"Seeded {len(new_customers)} new customers (skipped {len(customers) - len(new_customers)} existing)")
+        else:
+            print("All customers already exist, skipping")
+
+        existing_employees = db.query(Employee.employee_code).all()
+        existing_employee_codes = {e.employee_code for e in existing_employees}
 
         employees = [
             Employee(
+                employee_code="E00001",
                 name="Ramesh Kumar",
                 phone="9876500001",
                 address="Staff Quarters A, Bangalore",
+                role="CHECKER",
+                route_id=1,
                 is_active=True,
                 user_id=2
             ),
             Employee(
+                employee_code="E00002",
                 name="Suresh Babu",
                 phone="9876500002",
                 address="Staff Quarters B, Bangalore",
+                role="DELIVERY_PARTNER",
+                route_id=1,
                 is_active=True,
                 user_id=3
             ),
             Employee(
+                employee_code="E00003",
                 name="Venkat Reddy",
                 phone="9876500003",
                 address="Staff Colony, Hyderabad",
+                role="DELIVERY_PARTNER",
+                route_id=2,
                 is_active=True,
                 user_id=None
             ),
             Employee(
+                employee_code="E00004",
                 name="Ganesh Pai",
                 phone="9876500004",
                 address="Near Station, Mumbai",
+                role="CHECKER",
+                route_id=3,
                 is_active=True,
                 user_id=None
             ),
             Employee(
+                employee_code="E00005",
                 name="Shankar Naik",
                 phone="9876500005",
                 address="Main Road, Pune",
+                role="DELIVERY_PARTNER",
+                route_id=4,
                 is_active=True,
                 user_id=None
             ),
         ]
-        db.add_all(employees)
-        db.commit()
-        print(f"Seeded {len(employees)} employees")
+        new_employees = [e for e in employees if e.employee_code not in existing_employee_codes]
+        if new_employees:
+            db.add_all(new_employees)
+            db.commit()
+            print(f"Seeded {len(new_employees)} new employees (skipped {len(employees) - len(new_employees)} existing)")
+        else:
+            print("All employees already exist, skipping")
+
+        existing_subs = (
+            db.query(Subscription.customer_id, Subscription.milk_type_id)
+            .filter(Subscription.is_active == True)
+            .all()
+        )
+        existing_sub_keys = {(s.customer_id, s.milk_type_id) for s in existing_subs}
+
+        subscriptions = [
+            Subscription(
+                customer_id=1,
+                milk_type_id=1,
+                morning_quantity=2,
+                evening_quantity=1,
+                status="ACTIVE",
+                remarks="Rajesh - Full Cream Milk",
+                is_active=True
+            ),
+            Subscription(
+                customer_id=2,
+                milk_type_id=2,
+                morning_quantity=1,
+                evening_quantity=0,
+                status="ACTIVE",
+                remarks="Priya - Toned Milk",
+                is_active=True
+            ),
+            Subscription(
+                customer_id=3,
+                milk_type_id=4,
+                morning_quantity=1,
+                evening_quantity=1,
+                status="ACTIVE",
+                remarks="Amit - Standard Milk",
+                is_active=True
+            ),
+            Subscription(
+                customer_id=4,
+                milk_type_id=5,
+                morning_quantity=2,
+                evening_quantity=0,
+                status="ACTIVE",
+                remarks="Sneha - Small Pack",
+                is_active=True
+            ),
+            Subscription(
+                customer_id=5,
+                milk_type_id=1,
+                morning_quantity=3,
+                evening_quantity=2,
+                status="ACTIVE",
+                remarks="Vikram - Full Cream Milk",
+                is_active=True
+            ),
+        ]
+        new_subs = [
+            s for s in subscriptions
+            if (s.customer_id, s.milk_type_id) not in existing_sub_keys
+        ]
+        if new_subs:
+            db.add_all(new_subs)
+            db.commit()
+            print(f"Seeded {len(new_subs)} new subscriptions (skipped {len(subscriptions) - len(new_subs)} existing)")
+        else:
+            print("All subscriptions already exist, skipping")
 
         print("\nSeed completed successfully!")
         print("\nTest credentials:")
-        print("  Owner:           owner / owner123")
-        print("  Checker:         checker1 / checker123")
+        print("  Owner:            owner / owner123")
+        print("  Checker:          checker1 / checker123")
         print("  Delivery Partner: delivery1 / delivery123")
-        print("  Admin:           admin / admin123")
+        print("  Admin:            admin / admin123")
+        print("  Employee:         employee1 / emp123")
 
     except Exception as e:
         db.rollback()

@@ -1,256 +1,171 @@
-# PROJECT CONTEXT - Milk Distribution ERP
+# Project Context: Milk Management AI
 
-> **Read this file first when starting a new session.** It provides a complete overview of the project, its current state, and how to work with it.
+## Overview
 
----
+Milk Management AI is a backend API for managing a milk distribution business. It handles the complete lifecycle: customer registration, subscription management, delivery tracking, token bookkeeping, payment reconciliation, and AI-powered business insights.
 
-## What Is This Project?
+## Purpose
 
-A **Milk Distribution ERP** (Enterprise Resource Planning) system for managing daily milk delivery operations. It replaces manual registers used by milk distribution companies with a digital system.
-
-**Real-world analogy:** Think of it like Zomato/Swiggy but for daily milk delivery - managing customers, routes, subscriptions, daily deliveries, token-based payments, and reconciliation.
-
----
+Replace manual/legacy milk distribution operations with a digital system that supports:
+- Multi-shift (morning/evening) milk delivery scheduling
+- Route-based customer and delivery management
+- Token-based accounting for daily milk transactions
+- Financial reconciliation and payment tracking
+- AI-driven analytics and business suggestions
 
 ## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| Backend | FastAPI (Python) |
-| Database | PostgreSQL |
-| ORM | SQLAlchemy 2 |
-| Migrations | Alembic |
-| Validation | Pydantic v2 |
-| Auth | JWT (JSON Web Tokens) |
-| Python Version | 3.14 |
+| Framework | FastAPI 0.138.0 |
+| ORM | SQLAlchemy 2.0.51 |
+| Database | PostgreSQL (via psycopg2-binary 2.9.12) |
+| Migrations | Alembic 1.18.4 |
+| Auth | JWT (python-jose 3.5.0) + bcrypt (passlib 1.7.4) |
+| Validation | Pydantic 2.13.4 |
+| Testing | pytest (via TestClient) |
+| Server | Uvicorn 0.49.0 |
 
----
-
-## Project Structure
+## Directory Structure
 
 ```
 milk-management - AI/
-├── .ai/                    # AI documentation (read before coding)
-├── alembic/                # Database migrations
-│   └── versions/           # Migration files
-├── app/                    # Main application code
-│   ├── common/             # Shared components
-│   ├── constants/          # roles.py, shifts.py, statuses.py
-│   ├── core/               # auth.py, config.py, security.py
-│   ├── exceptions/         # Custom exceptions per module
-│   ├── models/             # SQLAlchemy ORM models
-│   ├── repositories/       # Empty (not yet implemented)
-│   ├── routers/            # FastAPI endpoints
-│   ├── schemas/            # Pydantic request/response models
-│   ├── services/           # Business logic
-│   ├── utils/              # Helper functions
-│   ├── database.py         # DB engine, session, base
-│   ├── dependencies.py     # FastAPI dependencies (get_db)
-│   └── main.py             # App entry point
-├── docs/                   # Human-readable documentation
-├── scripts/                # Utility scripts (seed, test)
-├── tests/                  # Test files (empty)
-├── alembic.ini             # Alembic configuration
-├── requirements.txt        # Python dependencies
-└── main.py                 # Root main.py (DO NOT USE - use app/main.py)
+├── app/                        # Main application package
+│   ├── core/                   # Security, auth, config, roles
+│   │   ├── auth.py             # Token verification logic
+│   │   ├── config.py           # Settings via pydantic-settings
+│   │   ├── roles.py            # Role constants
+│   │   └── security.py         # Password hashing, JWT creation
+│   ├── constants/              # Enums (roles, statuses, shifts)
+│   │   ├── roles.py
+│   │   ├── shifts.py
+│   │   └── statuses.py
+│   ├── models/                 # SQLAlchemy ORM models (6 implemented)
+│   │   ├── customer.py
+│   │   ├── employee.py
+│   │   ├── milk_type.py
+│   │   ├── route.py
+│   │   ├── subscription.py
+│   │   └── user.py
+│   ├── schemas/                # Pydantic request/response schemas
+│   │   ├── auth.py
+│   │   ├── customer.py
+│   │   ├── employee.py
+│   │   ├── milk_type.py
+│   │   ├── route.py
+│   │   ├── subscription.py
+│   │   └── user.py
+│   ├── routers/                # FastAPI route handlers (6 implemented)
+│   │   ├── auth.py
+│   │   ├── customers.py
+│   │   ├── milk_types.py
+│   │   ├── routes.py
+│   │   ├── subscriptions.py
+│   │   └── users.py
+│   ├── services/               # Business logic layer (6 implemented)
+│   │   ├── auth_service.py
+│   │   ├── customer_service.py
+│   │   ├── milk_type_service.py
+│   │   ├── route_service.py
+│   │   ├── subscription_service.py
+│   │   └── user_service.py
+│   ├── exceptions/             # Custom exception hierarchy
+│   │   ├── base.py
+│   │   ├── customer.py
+│   │   ├── milk_type.py
+│   │   ├── route.py
+│   │   ├── subscription.py
+│   │   └── user.py
+│   ├── utils/                  # Shared utilities (currently just __init__.py)
+│   ├── common/                 # Shared utilities (currently just __init__.py)
+│   ├── database.py             # DB engine, session, Base
+│   ├── dependencies.py         # FastAPI dependencies (get_db, oauth2)
+│   └── main.py                 # FastAPI app creation, router registration
+├── alembic/                    # Database migration scripts
+│   └── versions/               # 5 migration files (chronological chain)
+├── tests/                      # Pytest test suite (5 test files)
+├── scripts/                    # Seed data and manual test scripts
+├── docs/                       # Detailed design documentation (16 files)
+├── .ai/                        # AI knowledge base (this directory)
+├── main.py                     # Root-level minimal FastAPI entry (unused?)
+└── requirements.txt            # Python dependencies
 ```
 
-**IMPORTANT:** Run the app with `uvicorn app.main:app --reload`, NOT `uvicorn main:app`
+## Key Entities (Implemented)
 
----
+| Entity | Model File | Schema File | Service File | Router File | Exception File | Has CRUD API |
+|--------|-----------|-------------|-------------|------------|----------------|:---:|
+| User | `user.py` | `user.py` | `user_service.py` | `users.py` | `user.py` | Partial |
+| Route | `route.py` | `route.py` | `route_service.py` | `routes.py` | `route.py` | Yes |
+| Customer | `customer.py` | `customer.py` | `customer_service.py` | `customers.py` | `customer.py` | Yes |
+| MilkType | `milk_type.py` | `milk_type.py` | `milk_type_service.py` | `milk_types.py` | `milk_type.py` | Yes |
+| Employee | `employee.py` | `employee.py` | — | — | — | No |
+| Subscription | `subscription.py` | `subscription.py` | `subscription_service.py` | `subscriptions.py` | `subscription.py` | Yes |
 
-## Architecture Pattern
+## Key Entities (Planned — Files Deleted During Cleanup, Must Be Rebuilt)
 
-```
-HTTP Request
-    ↓
-Router (thin - validates request)
-    ↓
-Service (business logic)
-    ↓
-Model (SQLAlchemy ORM)
-    ↓
-Database (PostgreSQL)
-```
+The following empty stub files were removed in a codebase cleanup. They must be recreated when implementing the corresponding features:
 
-**Rules:**
-- Business logic goes in services, NOT routers
-- Routers only validate and call services
-- No SQL in routers
-- Use dependency injection for DB sessions
+| Entity | Purpose | Files That Need Creation |
+|--------|---------|--------------------------|
+| TokenBook | Token accounting for daily milk delivery tracking | model, schema, service, router, exception |
+| MilkAllocation | Daily milk allocation per route/shift | model, schema, router |
+| CashSale | Cash-based walk-in milk sales | model, schema, router |
+| Reconciliation | Payment and delivery reconciliation | model, service |
+| LeaveRequest | Employee leave management | model |
+| Delivery | Individual delivery records | service, exception |
 
----
+**Additional files removed during cleanup (empty stubs with no implementation):**
+- **Routers:** `employees.py`, `token_books.py`, `milk_allocation.py`, `cash_sales.py`, `dashboard.py`, `reports.py`
+- **Core:** `constants.py` (constants directory has `roles.py`, `shifts.py`, `statuses.py` instead)
+- **Utils:** `helpers.py`, `validators.py`
+- **Repositories directory:** `app/repositories/` was entirely empty and has been removed
+- **API directory:** `app/api/` contained only `__pycache__` and has been removed
 
-## Database Connection
+## Roles & Access Control
 
-```python
-# From alembic.ini
-postgresql://postgres:admin@localhost:5432/milk_managemen_ai
-```
+| Role | Description | API Access |
+|------|-------------|------------|
+| OWNER | Full system access, business owner | All endpoints |
+| CHECKER | Verifies deliveries, manages tokens | Token/subscription endpoints |
+| DELIVERY_PARTNER | Delivers milk, records deliveries | Delivery endpoints |
 
----
+## Database
 
-## Test Credentials
+- **PostgreSQL** at `localhost:5432/milk_managemen_ai`
+- 6 tables currently in schema: `users`, `routes`, `customers`, `milk_types`, `employees`, `subscriptions`
+- All entities use soft-delete via `is_active` boolean flag
+- Timestamps use `server_default=func.now()` with timezone
 
-| Role | Username | Password |
-|------|----------|----------|
-| Owner | `owner` | `owner123` |
-| Checker | `checker1` | `checker123` |
-| Delivery Partner | `delivery1` | `delivery123` |
-| Admin | `admin` | `admin123` |
+## Registered Routers (in `app/main.py`)
 
----
+| Router | Prefix | Status |
+|--------|--------|--------|
+| `users` | — | Implemented |
+| `auth` | — | Implemented |
+| `routes` | — | Implemented |
+| `customers` | — | Implemented |
+| `milk_types` | — | Implemented |
+| `subscriptions` | — | Implemented |
 
-## Seeded Data
+No stub/empty routers are registered. Dashboard and reports routers do not exist yet.
 
-| Entity | Count | IDs |
-|--------|-------|-----|
-| Users | 4 | 1-4 |
-| Customers | 15 | 1-15 |
-| Routes | 5 | 1-5 |
-| Milk Types | 7 | 1-7 |
-| Employees | 5 | 1-5 |
+## Current Status
 
----
+The project is in early-to-mid development. A cleanup pass removed all empty stub files and directories that contained no implementation, leaving a clean codebase with only files that have real content. The core CRUD for master data (routes, customers, milk types) and subscriptions is functional. Authentication/authorization is partially implemented but not enforced on most endpoints. Token management, delivery tracking, reconciliation, reports, and dashboard all need to be built from scratch.
 
-## Current Module Status (July 2026)
-
-### Completed Modules
-
-| Module | Model | Router | Service | Endpoints |
-|--------|-------|--------|---------|-----------|
-| Authentication | User | auth | auth_service | POST /auth/login, GET /auth/me |
-| Users | User | users | user_service | CRUD |
-| Customers | Customer | customers | customer_service | CRUD |
-| Routes | Route | routes | route_service | CRUD |
-| Milk Types | MilkType | milk_types | milk_type_service | CRUD |
-| Employees | Employee | employees | - | CRUD |
-| Subscriptions | Subscription | subscriptions | subscription_service | CRUD |
-
-### In-Progress Modules (Partial)
-
-| Module | Model | Router | Service | Status |
-|--------|-------|--------|---------|--------|
-| Token Books | TokenBook | token_books | token_service | Partial |
-| Cash Sales | CashSale | cash_sales | - | Partial |
-| Milk Allocation | MilkAllocation | milk_allocation | delivery_service | Partial |
-| Reconciliation | Reconciliation | - | reconciliation_service | Partial |
-
-### Not Started
-
-- Daily Delivery Planning
-- Token Ledger
-- Payment Management
-- Reports (Router exists, service incomplete)
-- AI Reports
-- Frontend (React)
-
----
-
-## API Base URL
-
-```
-http://localhost:8000
-```
-
-All endpoints require JWT token except `/auth/login`.
-
-**Headers for authenticated requests:**
-```
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
----
-
-## Key Business Rules
-
-1. **Delivery and Payment are Independent** - Milk delivered even if payment not received immediately
-2. **Token Books are Payment Instruments** - Used for payment, not delivery decisions
-3. **Subscriptions Determine Delivery** - What customer gets is based on subscription
-4. **Reconciliation Ensures Accountability** - Every route must be balanced before closing
-5. **Soft Delete** - Records are deactivated, never permanently deleted
-6. **Re-subscription Allowed** - After deactivation, customer can re-subscribe
-
----
-
-## Module Dependency Chain
-
-```
-Customer → Subscription → Daily Delivery → Token Ledger → Reports
-    ↓
-   Route
-```
-
-**Next module to build:** Daily Delivery Planning (depends on Subscriptions)
-
----
-
-## How to Add a New Module
-
-Follow this order for every new module:
-
-1. Create model in `app/models/`
-2. Create schemas in `app/schemas/`
-3. Create exceptions in `app/exceptions/`
-4. Create service in `app/services/`
-5. Create router in `app/routers/`
-6. Register router in `app/main.py`
-7. Update `app/models/__init__.py`
-8. Generate Alembic migration
-9. Test with Postman or test script
-
----
-
-## Common Commands
+## Running the Application
 
 ```bash
-# Run the app
-uvicorn app.main:app --reload
+# Install dependencies
+pip install -r requirements.txt
 
-# Generate migration
-python -m alembic revision --autogenerate -m "description"
+# Run migrations
+alembic upgrade head
 
-# Apply migration
-python -m alembic upgrade head
-
-# Seed database
+# Seed development data
 python scripts/seed.py
 
-# Run tests
-python scripts/test_subscriptions.py
+# Start server
+uvicorn app.main:app --reload
 ```
-
----
-
-## Documentation Locations
-
-| Folder | Purpose |
-|--------|---------|
-| `.ai/` | AI-specific docs (architecture, rules, patterns) |
-| `docs/` | Human-readable docs (business rules, API spec) |
-
-**AI should read `.ai/` folder before generating code.**
-
----
-
-## Known Issues
-
-- Reports API router exists but service is incomplete
-- No automated tests yet
-- `app/repositories/` folder is empty (planned for future)
-- Root `main.py` is empty - always use `app/main.py`
-
----
-
-## Next Steps (Priority Order)
-
-1. **Daily Delivery Planning** - Generate daily delivery lists from subscriptions
-2. **Token Ledger** - Track token usage per customer
-3. **Payment Management** - Handle token book payments
-4. **Reports** - Complete reporting module
-5. **Frontend** - React application
-
----
-
-*Last updated: July 2026*

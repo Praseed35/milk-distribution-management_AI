@@ -2,9 +2,11 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.schemas.auth import LoginRequest
+from app.schemas.auth import ChangePassword
 
 from app.core.security import (
     verify_password,
+    hash_password,
     create_access_token
 )
 
@@ -39,3 +41,21 @@ def login(
     )
 
     return access_token
+
+
+def change_password(
+    db: Session,
+    user: User,
+    data: ChangePassword
+):
+
+    if not verify_password(
+        data.current_password,
+        user.password_hash
+    ):
+        return False
+
+    user.password_hash = hash_password(data.new_password)
+    db.commit()
+
+    return True

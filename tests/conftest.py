@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -11,14 +13,25 @@ from app.models.user import User
 from app.models.route import Route
 from app.models.customer import Customer
 from app.models.milk_type import MilkType
+from app.models.employee import Employee
+from app.models.subscription import Subscription
 
-
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False}
+ACTUAL_DB_URL = os.getenv(
+    "TEST_DB_URL",
+    "postgresql://postgres:admin@localhost:5432/milk_managemen_ai"
 )
+
+USE_ACTUAL_DB = os.getenv("USE_ACTUAL_DB", "true").lower() == "true"
+
+if USE_ACTUAL_DB:
+    SQLALCHEMY_DATABASE_URL = ACTUAL_DB_URL
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+else:
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
 
 TestingSessionLocal = sessionmaker(
     autocommit=False,
@@ -26,27 +39,64 @@ TestingSessionLocal = sessionmaker(
     bind=engine
 )
 
+_test_connection = None
+_test_session_override = None
+
 
 def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    if _test_session_override:
+        yield _test_session_override
+    else:
+        db = TestingSessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
 
 
 app.dependency_overrides[get_db] = override_get_db
 
 
+@pytest.fixture(scope="session", autouse=True)
+def setup_teardown_db():
+    global _test_connection, _test_session_override
+
+    if USE_ACTUAL_DB:
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+    yield
+
+    if USE_ACTUAL_DB:
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+
 @pytest.fixture(scope="function")
 def db_session():
-    Base.metadata.create_all(bind=engine)
-    session = TestingSessionLocal()
-    try:
+    global _test_connection, _test_session_override
+
+    if USE_ACTUAL_DB:
+        _test_connection = engine.connect()
+        transaction = _test_connection.begin()
+        session = TestingSessionLocal(bind=_test_connection)
+        _test_session_override = session
+
         yield session
-    finally:
+
+        _test_session_override = None
         session.close()
-        Base.metadata.drop_all(bind=engine)
+        transaction.rollback()
+        _test_connection.close()
+        _test_connection = None
+    else:
+        Base.metadata.create_all(bind=engine)
+        session = TestingSessionLocal()
+        try:
+            yield session
+        finally:
+            session.close()
+            Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
@@ -152,3 +202,20 @@ def seed_milk_type(db_session):
     db_session.commit()
     db_session.refresh(milk_type)
     return milk_type
+
+
+@pytest.fixture
+def seed_subscription(db_session, seed_customer, seed_milk_type):
+    subscription = Subscription(
+        customer_id=seed_customer.id,
+        milk_type_id=seed_milk_type.id,
+        morning_quantity=2,
+        evening_quantity=1,
+        status="ACTIVE",
+        remarks="Test subscription",
+        is_active=True
+    )
+    db_session.add(subscription)
+    db_session.commit()
+    db_session.refresh(subscription)
+    return subscription

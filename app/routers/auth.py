@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 from app.dependencies import get_db
 from app.schemas.auth import LoginRequest
+from app.schemas.auth import ChangePassword
 from app.models.user import User
 from app.core.auth import get_current_user
 from app.core.roles import require_role
@@ -48,6 +49,30 @@ def get_me(
         "id": current_user.id,
         "username": current_user.username,
         "role": current_user.role
+    }
+
+@router.put("/change-password")
+def change_password(
+    data: ChangePassword,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+
+    success = auth_service.change_password(
+        db,
+        current_user,
+        data
+    )
+
+    if not success:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Current password is incorrect."
+        )
+
+    return {
+        "message": "Password changed successfully."
     }
 
 @router.get("/owner-dashboard")
