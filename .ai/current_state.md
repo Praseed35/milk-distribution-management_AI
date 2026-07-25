@@ -1,86 +1,145 @@
-# Current State: Milk Management AI
+# CURRENT_STATE.md - Project Snapshot
 
-## Implementation Progress
-
-### Completed Features
-- [x] Project scaffolding (FastAPI app, SQLAlchemy setup, Alembic)
-- [x] PostgreSQL database with 6 tables
-- [x] User model and basic CRUD (create + list)
-- [x] Authentication (JWT login, /me endpoint, role checking)
-- [x] Route CRUD (create, read, update, soft-delete)
-- [x] Milk Type CRUD (create, read, update, soft-delete)
-- [x] Customer CRUD (create, read, update, soft-delete with auto-code generation)
-- [x] Subscription CRUD (create, read, update, deactivate with business validations)
-- [x] Custom exception hierarchy (partial — inconsistent inheritance)
-- [x] Pydantic schemas for all implemented entities
-- [x] Alembic migrations (5 migrations covering all 6 tables)
-- [x] Test suite with fixtures (auth, seed data, DB setup)
-- [x] Seed script for development data
-- [x] Comprehensive design documentation (16 docs in `/docs`)
-
-### In Progress / Partially Implemented
-- [ ] Role-based access control (dependency exists but not applied to most endpoints)
-- [ ] Exception hierarchy (BusinessException base exists but not consistently used)
-
-### Not Implemented (Empty Stubs)
-- [ ] Employee CRUD (router + schema exist, no service logic)
-- [ ] Token Book management (all layers empty)
-- [ ] Milk Allocation management (all layers empty)
-- [ ] Cash Sales management (all layers empty)
-- [ ] Delivery tracking (all layers empty)
-- [ ] Reconciliation service (all layers empty)
-- [ ] Reports endpoint (all layers empty)
-- [ ] Dashboard endpoint (all layers empty)
-- [ ] Utility validators and helpers (empty)
+> Snapshot of the project as of July 2026.
 
 ---
 
-## Code Metrics
+## Quick Facts
 
-| Category | Count |
-|----------|-------|
-| Implemented routers | 6 (auth, users, routes, customers, milk_types, subscriptions) |
-| Empty router stubs | 6 (employees, token_books, milk_allocation, cash_sales, reports, dashboard) |
-| Implemented services | 6 (auth, user, route, milk_type, customer, subscription) |
-| Empty service stubs | 3 (token, delivery, reconciliation) |
-| Database tables | 6 (users, routes, customers, milk_types, employees, subscriptions) |
-| API endpoints | 26 total active endpoints |
-| Test files | 5 (conftest, test_users, test_routes, test_milk_types, test_customers, test_auth) |
-| Migration files | 5 |
-
----
-
-## Test Coverage
-
-| Module | Tests | Coverage |
-|--------|-------|----------|
-| Auth | Login, /me, owner-dashboard | Good |
-| Users | Create, list, duplicate check | Basic |
-| Routes | Full CRUD + edge cases | Good |
-| Milk Types | Full CRUD + edge cases | Good |
-| Customers | Full CRUD + phone/route validation | Good |
-| Subscriptions | **Not tested in pytest** | Missing |
-| Employees | **Not tested** | Missing |
-| Token Books | **Not tested** | Missing |
+| Metric | Value |
+|--------|-------|
+| Total Tables | 10 |
+| Total API Endpoints | ~40 |
+| Total Tests | 218 |
+| Test Status | All passing |
+| Sprints Completed | 3 (1, 2, 4-core) |
+| Next Sprint | Sprint 3 (Daily Delivery) |
+| Database | PostgreSQL localhost:5432/milk_managemen_ai |
+| Framework | FastAPI |
+| ORM | SQLAlchemy 2.0 |
+| Auth | JWT (30min, HS256) |
+| Python Version | 3.10+ (uses `str | None` syntax) |
 
 ---
 
-## Environment & Configuration
+## File Count by Directory
 
-| Setting | Value | Source |
-|---------|-------|--------|
-| Database URL | `postgresql://postgres:admin@localhost:5432/milk_managemen_ai` | Hardcoded in `database.py` |
-| JWT Secret | `milk_management_secret_key_2026` | Hardcoded in `config.py` |
-| JWT Algorithm | HS256 | Hardcoded in `config.py` |
-| Token Expiry | 30 minutes | Hardcoded in `config.py` |
-| NVIDIA API Key | In `.env` file | Environment variable |
+| Directory | Files | Purpose |
+|-----------|-------|---------|
+| app/core/ | 4 | Security, auth, config, roles |
+| app/constants/ | 3 | Enum definitions |
+| app/models/ | 10 (+ __init__) | SQLAlchemy models |
+| app/schemas/ | 10 (+ __init__) | Pydantic schemas |
+| app/routers/ | 9 (+ __init__) | API routers |
+| app/services/ | 9 (+ __init__) | Business logic |
+| app/exceptions/ | 9 (+ __init__, + base) | Custom exceptions |
+| tests/ | 10 test files + conftest | Test suite |
+| alembic/versions/ | 8 | Database migrations |
+| scripts/ | 2 | Seed + test helper |
 
 ---
 
-## Known Issues Affecting Functionality
+## Quick Start for New AI Session
 
-1. **No auth on most endpoints** — Any unauthenticated user can create/delete customers, routes, etc.
-2. **Hardcoded secrets** — DB password and JWT secret are in source code
-3. **Duplicate root main.py** — Both `main.py` (root) and `app/main.py` exist; only `app/main.py` is functional
-4. **Empty README.md** — No setup/usage instructions
-5. **`test_kimi.py` contains exposed API key** in plaintext
+1. **Read this file** (`CURRENT_STATE.md`) for a 30-second overview
+2. **Read `PROJECT_CONTEXT.md`** for complete understanding
+3. **Read `ARCHITECTURE.md`** for system design
+4. **Read `DATABASE.md`** for schema details
+5. **Read `API_REFERENCE.md`** for endpoint details
+6. **Run tests**: `pytest` to verify everything works
+7. **Start coding**: Follow patterns in existing services/routers
+
+---
+
+## Key Patterns to Follow
+
+### Adding a New Module
+1. Create model in `app/models/{name}.py`
+2. Add import to `app/models/__init__.py`
+3. Create Alembic migration: `alembic revision --autogenerate -m "add {name}"`
+4. Create schemas in `app/schemas/{name}.py`
+5. Create exceptions in `app/exceptions/{name}.py`
+6. Create service in `app/services/{name}_service.py`
+7. Create router in `app/routers/{name}.py`
+8. Register router in `app/main.py`
+9. Create tests in `tests/test_{name}.py`
+10. Add seed data in `scripts/seed.py`
+
+### Service Function Template
+```python
+def create(db: Session, data: CreateSchema) -> Model:
+    # Validate FK exists
+    existing = db.query(FKModel).filter(FKModel.id == data.fk_id).first()
+    if not existing:
+        raise ForeignKeyNotFoundError()
+    if not existing.is_active:
+        raise InactiveForeignKeyError()
+    
+    # Validate uniqueness
+    duplicate = db.query(Model).filter(Model.field == data.field).first()
+    if duplicate:
+        raise DuplicateFieldError(data.field)
+    
+    # Create and save
+    new = Model(field=data.field)
+    db.add(new)
+    db.commit()
+    db.refresh(new)
+    return new
+```
+
+### Router Function Template
+```python
+@router.post("/", response_model=ResponseSchema, status_code=201)
+def create(data: CreateSchema, db: Session = Depends(get_db)):
+    try:
+        return service.create(db, data)
+    except ForeignKeyNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except DuplicateFieldError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+```
+
+### Test Function Template
+```python
+class TestCreateEntity:
+    def test_success(self, client, db_session, seed_fk):
+        response = client.post("/entities/", json={...})
+        assert response.status_code == 201
+        assert response.json()["field"] == expected_value
+    
+    def test_not_found(self, client, db_session):
+        response = client.post("/entities/", json={...})
+        assert response.status_code == 404
+    
+    def test_validation_error(self, client, db_session):
+        response = client.post("/entities/", json={...})
+        assert response.status_code == 422
+```
+
+---
+
+## Database Reset Commands
+
+```bash
+# After running tests, restore seed data:
+python -m scripts.seed
+
+# Full database reset:
+alembic downgrade base
+alembic upgrade head
+python -m scripts.seed
+
+# Create new migration after model changes:
+alembic revision --autogenerate -m "description"
+alembic upgrade head
+```
+
+---
+
+## Last Updated
+
+- Date: July 26, 2026
+- Last Sprint Completed: Sprint 4 (Core Token Book Management)
+- Test Count: 218
+- Tables: 10

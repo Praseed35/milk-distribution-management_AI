@@ -1,582 +1,171 @@
-# Database Schema
+# Database Schema (Current Implementation)
 
-## Purpose
-
-This document defines the complete logical database design for the Milk Distribution
-Management System.
-
-It is the single source of truth for:
-
-- Database entities
-- Relationships
-- Business constraints
-- Foreign keys
-- Entity responsibilities
-
-The AI MUST understand this document before creating any database model,
-repository, service, migration or API.
+> This reflects the ACTUAL database schema as implemented. See also `DATABASE.md` for the detailed reference.
 
 ---
 
-# Database Design Principles
+## Implemented Tables (10)
 
-The project follows a normalized relational database design.
+### 1. users
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK |
+| username | VARCHAR(100) | UNIQUE, NOT NULL |
+| password_hash | VARCHAR(255) | NOT NULL |
+| role | VARCHAR(50) | NOT NULL |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
 
-Rules
+### 2. routes
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| route_code | VARCHAR | UNIQUE, NOT NULL |
+| route_name | VARCHAR | UNIQUE, NOT NULL |
+| description | VARCHAR | NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
 
-- Every table has a UUID primary key.
-- Every table contains audit timestamps.
-- Business history must never be deleted.
-- Soft delete is preferred.
-- Foreign keys must be enforced.
-- Every transaction must be auditable.
-- Business logic never belongs inside database models.
+### 3. customers
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| customer_code | VARCHAR(20) | UNIQUE, NOT NULL |
+| customer_name | VARCHAR(100) | NOT NULL |
+| primary_phone | VARCHAR(15) | UNIQUE, NOT NULL |
+| alternate_phone | VARCHAR(15) | NULLABLE |
+| address | VARCHAR(255) | NULLABLE |
+| route_id | INTEGER | FK → routes.id, NOT NULL |
+| remarks | VARCHAR(255) | NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
 
-Standard Columns
+### 4. milk_types
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| milk_name | VARCHAR(100) | UNIQUE, NOT NULL |
+| volume_ml | INTEGER | NOT NULL |
+| description | VARCHAR(255) | NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
 
-Every table should contain whenever applicable:
+### 5. employees
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| employee_code | VARCHAR(20) | UNIQUE, NOT NULL |
+| name | VARCHAR(100) | NOT NULL |
+| phone | VARCHAR(20) | UNIQUE, NOT NULL |
+| address | VARCHAR(255) | NULLABLE |
+| role | VARCHAR(50) | NOT NULL |
+| route_id | INTEGER | FK → routes.id, NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| user_id | INTEGER | FK → users.id, NULLABLE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
 
-id
-created_at
-updated_at
-created_by
-updated_by
-is_active
+### 6. subscriptions
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| customer_id | INTEGER | FK → customers.id, NOT NULL |
+| milk_type_id | INTEGER | FK → milk_types.id, NOT NULL |
+| morning_quantity | INTEGER | NOT NULL, DEFAULT 0 |
+| evening_quantity | INTEGER | NOT NULL, DEFAULT 0 |
+| status | VARCHAR(20) | NOT NULL, DEFAULT "ACTIVE" |
+| start_date | TIMESTAMPTZ | SERVER DEFAULT now(), NOT NULL |
+| end_date | TIMESTAMPTZ | NULLABLE |
+| remarks | VARCHAR(255) | NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
+
+### 7. delivery_exceptions
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| subscription_id | INTEGER | FK → subscriptions.id, NOT NULL |
+| exception_type | VARCHAR(20) | NOT NULL |
+| start_date | TIMESTAMPTZ | NOT NULL |
+| end_date | TIMESTAMPTZ | NULLABLE |
+| reason | VARCHAR(255) | NULLABLE |
+| status | VARCHAR(20) | NOT NULL, DEFAULT "ACTIVE" |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
+
+### 8. token_identities
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| customer_id | INTEGER | FK → customers.id, NOT NULL |
+| milk_type_id | INTEGER | FK → milk_types.id, NOT NULL |
+| token_number | INTEGER | NOT NULL |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
+
+Unique constraint: (customer_id, milk_type_id, token_number)
+
+### 9. token_book_issues
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| token_identity_id | INTEGER | FK → token_identities.id, NOT NULL |
+| issue_number | INTEGER | NOT NULL |
+| issue_date | TIMESTAMPTZ | SERVER DEFAULT now(), NOT NULL |
+| completion_date | TIMESTAMPTZ | NULLABLE |
+| current_sheet | INTEGER | NOT NULL, DEFAULT 0 |
+| status | VARCHAR(20) | NOT NULL, DEFAULT "WAITING" |
+| remarks | VARCHAR(255) | NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
+
+### 10. token_book_payments
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| token_book_issue_id | INTEGER | FK → token_book_issues.id, NOT NULL |
+| payment_mode | VARCHAR(20) | NOT NULL |
+| payment_status | VARCHAR(20) | NOT NULL, DEFAULT "PENDING" |
+| book_price | NUMERIC(10,2) | NOT NULL |
+| amount_paid | NUMERIC(10,2) | NOT NULL, DEFAULT 0 |
+| balance_amount | NUMERIC(10,2) | NOT NULL, DEFAULT 0 |
+| payment_date | TIMESTAMPTZ | SERVER DEFAULT now(), NOT NULL |
+| collected_by | INTEGER | FK → users.id, NULLABLE |
+| remarks | VARCHAR(255) | NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
 
 ---
 
-# Domain Overview
+## Planned Tables (Not Yet Implemented)
 
-Authentication
+These are needed for future sprints:
 
-↓
-
-Users
-
-↓
-
-Routes
-
-↓
-
-Customers
-
-↓
-
-Subscriptions
-
-↓
-
-Token Books
-
-↓
-
-Daily Delivery
-
-↓
-
-Delivery Exceptions
-
-↓
-
-Cash Sales
-
-↓
-
-Payments
-
-↓
-
-Reconciliation
-
-↓
-
-Reports
+| Table | Sprint | Purpose |
+|-------|--------|---------|
+| delivery_sessions | Sprint 3 | Daily delivery session per route/shift |
+| delivery_items | Sprint 3 | Per-subscription delivery record |
+| token_register | Sprint 4 ext | Sheet-level token tracking |
+| token_ledger | Sprint 4 ext | Token transaction history |
+| warning_logs | Sprint 4 ext | Alert/warning records |
+| reconciliation_sessions | Sprint 5 | Daily reconciliation per route |
+| reconciliation_items | Sprint 5 | Per-subscription reconciliation |
+| payment_ledger | Sprint 6 | Customer payment tracking |
 
 ---
 
-# Authentication Domain
-
-## User
-
-Purpose
-
-Represents every authenticated system user.
-
-Fields
-
-- id
-- username
-- email
-- password_hash
-- full_name
-- phone
-- role
-- is_active
-- created_at
-- updated_at
-
-Relationships
-
-User
-
-↓
-
-Many Routes
-
-↓
-
-Many Deliveries
-
-Business Rules
-
-- Username must be unique.
-- Email must be unique.
-- Password never stored in plain text.
-
----
-
-## Role
-
-Purpose
-
-Defines system permissions.
-
-Examples
-
-Owner
-
-Checker
-
-Delivery Partner
-
-Administrator
-
-Business Rules
-
-Roles control API authorization only.
-
----
-
-# Master Data
-
-## Route
-
-Purpose
-
-Represents a milk delivery route.
-
-Fields
-
-- id
-- route_code
-- route_name
-- description
-- delivery_partner_id
-- is_active
-
-Relationships
-
-Route
-
-↓
-
-Many Customers
-
-↓
-
-Many Deliveries
-
-↓
-
-Many Reports
-
-Business Rules
-
-Route code must be unique.
-
-Customers cannot belong to multiple routes.
-
----
-
-## Milk Type
-
-Purpose
-
-Represents a milk product.
-
-Examples
-
-500 ml
-
-1 Litre
-
-Fields
-
-- id
-- code
-- name
-- volume_ml
-- is_active
-
-Business Rules
-
-Milk types are immutable.
-
-Historical transactions must preserve original milk type.
-
----
-
-# Customer Domain
-
-## Customer
-
-Purpose
-
-Represents a customer.
-
-Fields
-
-- id
-- customer_code
-- name
-- phone
-- address
-- route_id
-- status
-
-Relationships
-
-Customer
-
-↓
-
-Many Subscriptions
-
-↓
-
-Many Token Books
-
-↓
-
-Many Daily Deliveries
-
-↓
-
-Many Payments
-
-Business Rules
-
-One customer belongs to exactly one route.
-
-Customer may own multiple token books.
-
-Customer may have multiple subscriptions.
-
-Historical deliveries remain after customer becomes inactive.
-
----
-
-# Subscription Domain
-
-## Subscription
-
-Purpose
-
-Represents recurring milk requirements.
-
-Fields
-
-- id
-- customer_id
-- milk_type_id
-- quantity
-- start_date
-- end_date
-- status
-
-Relationships
-
-Customer
-
-↓
-
-Many Subscriptions
-
-Business Rules
-
-Customer may have multiple subscriptions.
-
-Inactive subscriptions never generate deliveries.
-
-Subscription history is immutable.
-
----
-
-# Token Accounting
-
-## Token Book
-
-Purpose
-
-Represents a physical token booklet.
-
-Fields
-
-- id
-- customer_id
-- token_number
-- milk_type_id
-- total_sheets
-- issued_date
-- status
-
-Relationships
-
-Customer
-
-↓
-
-Many Token Books
-
-Business Rules
-
-One customer may own multiple books.
-
-Same token number may exist for different milk types.
-
-Books are never deleted.
-
----
-
-## Token Sheet
-
-Purpose
-
-Represents one detachable token.
-
-Fields
-
-- id
-- token_book_id
-- sheet_number
-- status
-
-Business Rules
-
-Sheet numbers are unique inside a token book.
-
-Status
-
-Unused
-
-Collected
-
-Pending
-
-Cancelled
-
-Lost
-
----
-
-## Token Ledger
-
-Purpose
-
-Maintains immutable token history.
-
-Fields
-
-- id
-- token_sheet_id
-- delivery_id
-- operation
-- timestamp
-
-Business Rules
-
-Ledger is append only.
-
-Never update historical entries.
-
----
-
-# Daily Operations
-
-## Daily Delivery
-
-Purpose
-
-Represents actual milk delivery.
-
-Fields
-
-- id
-- route_id
-- customer_id
-- delivery_date
-- milk_type_id
-- quantity
-- delivery_status
-
-Relationships
-
-Route
-
-↓
-
-Many Deliveries
-
-Business Rules
-
-Delivery record never changes after completion.
-
-Corrections create adjustment records.
-
----
-
-## Delivery Exception
-
-Purpose
-
-Stores delivery deviations.
-
-Examples
-
-Customer absent
-
-Holiday
-
-Emergency delivery
-
-Extra delivery
-
-Business Rules
-
-Exceptions never modify original delivery schedule.
-
----
-
-# Finance
-
-## Cash Sale
-
-Purpose
-
-Represents milk sold without subscription.
-
-Fields
-
-- id
-- route_id
-- customer_name
-- milk_type_id
-- quantity
-- amount
-
-Business Rules
-
-Cash sales are independent of subscriptions.
-
----
-
-## Payment
-
-Purpose
-
-Represents customer payment.
-
-Fields
-
-- id
-- customer_id
-- amount
-- payment_method
-- payment_date
-
-Business Rules
-
-Supports
-
-Partial payment
-
-Advance payment
-
-Postpaid payment
-
-Payment history is immutable.
-
----
-
-# Reporting
-
-## Route Reconciliation
-
-Purpose
-
-Stores daily balancing information.
-
-Formula
-
-Loaded Milk
-
-=
-
-Delivered Milk
-
-+
-
-Cash Sale
-
-+
-
-Returned Milk
-
-Business Rules
-
-Route cannot close until reconciliation balances.
-
----
-
-# Future Modules
-
-Version 2
-
-- Mobile Application
-- QR Tokens
-- GPS Tracking
-- Route Optimization
-- Multi Branch
-- Inventory
-- Customer Notifications
-- AI Analytics
-- Predictive Demand
-
----
-
-# AI Instructions
-
-When creating new features
-
-Always identify
-
-1. Domain
-
-2. Entity
-
-3. Relationships
-
-4. Business Rules
-
-5. Required Foreign Keys
-
-6. Migration Impact
-
-Never create isolated tables.
-
-Always integrate with the existing domain model.
-
-Never violate business relationships.
-
-Never bypass the Service layer.
+## Design Principles (Actual)
+
+1. **Integer primary keys** (not UUIDs as originally planned)
+2. **Soft delete via is_active** boolean on every table
+3. **Timestamps** (created_at, updated_at) on all tables except users
+4. **Foreign key enforcement** at database level
+5. **String statuses** (not enum columns) - business logic enforces valid values
+6. **No created_by/updated_by** audit columns (not yet implemented)

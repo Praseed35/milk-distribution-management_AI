@@ -1,136 +1,305 @@
-# Architecture: Milk Management AI
+# ARCHITECTURE.md - System Architecture
 
-## Layered Architecture
+> Detailed architecture documentation for the Milk Management ERP Backend.
 
-The application follows a 4-layer architecture:
+---
 
-```
-┌─────────────────────────────────────┐
-│         Routers (API Layer)         │  HTTP endpoints, request parsing,
-│   app/routers/*.py                  │  response formatting, status codes
-├─────────────────────────────────────┤
-│         Services (Business Layer)   │  Domain logic, validation,
-│   app/services/*.py                 │  business rules enforcement
-├─────────────────────────────────────┤
-│         Models (Data Layer)         │  SQLAlchemy ORM models,
-│   app/models/*.py                   │  table definitions, relationships
-├─────────────────────────────────────┤
-│         Database (Persistence)      │  PostgreSQL via SQLAlchemy,
-│   app/database.py                   │  Alembic migrations
-└─────────────────────────────────────┘
-```
+## 1. Application Entry Point
 
-**Cross-cutting concerns:**
-- `app/core/` — Security (JWT, bcrypt), auth dependencies, role-based access
-- `app/exceptions/` — Custom exception classes per domain
-- `app/schemas/` — Pydantic validation/response models
-- `app/constants/` — Enums for statuses, shifts, roles
-- `app/dependencies.py` — FastAPI DI (database session, OAuth2 scheme)
-
-## Data Flow
-
-```
-HTTP Request
-  → FastAPI Router (app/routers/*.py)
-    → Dependency Injection (get_db, get_current_user)
-      → Service Method (app/services/*.py)
-        → SQLAlchemy ORM (app/models/*.py)
-          → PostgreSQL
-        ← ORM Result
-      ← Service response (ORM model or dict)
-    ← Router formats HTTP response
-  ← HTTP Response (JSON)
-```
-
-## Authentication Flow
-
-```
-POST /auth/login (username, password)
-  → auth_service.login() verifies credentials
-  → Returns JWT access_token (sub=username, role, exp=30min)
-  → Client includes "Authorization: Bearer <token>" header
-
-Protected endpoints:
-  → Depends(get_current_user) decodes JWT → queries User by username
-  → Depends(require_role(["OWNER"])) checks role against allowed list
-  → 401 for invalid/missing token, 403 for insufficient role
-```
-
-## Error Handling Pattern
-
-All routers follow a consistent exception-mapping pattern:
+**File**: `app/main.py`
 
 ```python
-try:
-    result = service.method(db, ...)
-    return result
-except DomainException as e:
-    raise HTTPException(status_code=XXX, detail=str(e))
+app = FastAPI()
+# 9 routers registered
+# GET "/" returns {"message": "Milk Management API"}
 ```
 
-Exception → HTTP status mapping:
-| Exception | Status Code |
+The app is a standard FastAPI application with no middleware, no CORS, no startup/shutdown events. All routers are registered at module level via `app.include_router()`.
+
+---
+
+## 2. Dependency Injection
+
+### Database Session
+**File**: `app/dependencies.py`
+
+```python
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+```
+
+Every router endpoint receives `db: Session = Depends(get_db)`.
+
+### Authentication
+**File**: `app/core/auth.py`
+
+```python
+def get_current_user(token, db) -> User:
+    # Decodes JWT, looks up user by username
+```
+
+### Role Authorization
+**File**: `app/core/roles.py`
+
+```python
+def require_role(allowed_roles: list):
+    def role_checker(current_user=Depends(get_current_user)):
+        if current_user.role not in allowed_roles:
+            raise HTTPException(403, "Access denied")
+        return current_user
+    return role_checker
+```
+
+Usage in router:
+```python
+@router.post("/")
+def create(..., current_user=Depends(require_role(["OWNER"]))):
+```
+
+---
+
+## 3. Security Pipeline
+
+**File**: `app/core/security.py`
+
+```
+Password -> bcrypt hash -> stored in DB
+Login -> verify password -> create JWT (sub=username, role=role)
+Request -> decode JWT -> lookup user -> inject as current_user
+```
+
+**JWT Configuration** (`app/core/config.py`):
+- Algorithm: HS256
+- Expiry: 30 minutes
+- Secret: hardcoded `milk_management_secret_key_2026`
+- Token URL: `auth/login` (for Swagger UI OAuth2)
+
+---
+
+## 4. Service Pattern
+
+All services follow the same pattern:
+
+```python
+# Module-level functions (not a class)
+def create(db: Session, data: CreateSchema) -> Model:
+    # 1. Validate foreign key exists and is active
+    # 2. Check business rules (duplicates, constraints)
+    # 3. Raise custom exception if violated
+    # 4. Create model instance
+    # 5. db.add() + db.commit() + db.refresh()
+    # 6. Return model object
+
+def get_all(db: Session) -> list[Model]:
+    # Query with is_active == True filter
+    # For complex modules, use joined queries returning list[dict]
+
+def get_by_id(db: Session, id: int) -> Model:
+    # Query by id + is_active == True
+    # Raise NotFound if missing
+
+def update_by_id(db: Session, id: int, data: UpdateSchema) -> Model:
+    # Find existing + is_active
+    # Validate constraints
+    # Update fields
+    # commit + refresh
+
+def delete_by_id(db: Session, id: int) -> Model:
+    # Find existing + is_active
+    # Set is_active = False
+    # commit + refresh
+```
+
+### Response Patterns
+
+**Simple modules** (Routes, MilkTypes, Users): Return model objects directly. Pydantic `from_attributes=True` handles serialization.
+
+**Complex modules** (Subscriptions, DeliveryExceptions, TokenBooks): Return manually constructed dicts from joined queries, because the response needs data from multiple tables.
+
+---
+
+## 5. Exception Flow
+
+```
+Service raises DomainException
+    -> Router catches it
+    -> Maps to HTTPException with appropriate status code
+    -> FastAPI returns JSON error response
+```
+
+**Exception naming convention**: `{Entity}{Reason}Error` (e.g., `DuplicateRouteCodeError`, `RouteNotFoundError`)
+
+**Note**: Some exceptions extend `BusinessException` (from `base.py`), others extend `Exception` directly. This is inconsistent.
+
+---
+
+## 6. Data Flow Diagrams
+
+### Customer Creation
+```
+POST /customers/
+  -> customers.py router
+  -> customer_service.create(db, CustomerCreate)
+    -> Validate route exists and is active
+    -> Validate phone not duplicate
+    -> Validate primary != alternate phone
+    -> Auto-generate customer_code (C{NNNNN})
+    -> Create Customer instance
+    -> db.add + commit + refresh
+  <- Return Customer object
+  <- HTTP 200 with CustomerResponse
+```
+
+### Subscription Detail Retrieval
+```
+GET /subscriptions/{id}
+  -> subscriptions.py router
+  -> subscription_service.get_by_id(db, subscription_id)
+    -> Joined query: Subscription + Customer + MilkType
+    -> Construct nested dict:
+       { id, customer: {...}, milk_type: {...}, quantities, status, dates }
+  <- HTTP 200 with SubscriptionDetailResponse
+```
+
+### Token Book Payment Creation
+```
+POST /token-books/payments/
+  -> token_books.py router
+  -> token_book_service.create_payment(db, TokenBookPaymentCreate)
+    -> Validate TokenBookIssue exists
+    -> Validate amount_paid <= book_price
+    -> Calculate balance = book_price - amount_paid
+    -> Auto-determine status: PAID/PARTIAL/PENDING
+    -> Create TokenBookPayment instance
+    -> db.add + commit + refresh
+  <- HTTP 201 with TokenBookPaymentResponse
+```
+
+---
+
+## 7. Authentication Flow
+
+```
+1. Client: POST /auth/login {username, password}
+   -> auth_service.login()
+   -> Verify credentials against DB
+   -> Generate JWT with {sub: username, role: role, exp: now+30min}
+   <- {access_token: "...", token_type: "bearer"}
+
+2. Client: GET /auth/me  (Header: Authorization: Bearer <token>)
+   -> oauth2_scheme extracts token
+   -> get_current_user() decodes JWT, looks up User
+   <- {id, username, role}
+
+3. Client: GET /auth/owner-dashboard  (Header: Authorization: Bearer <token>)
+   -> require_role(["OWNER"]) checks user.role
+   <- 200 if OWNER, 403 if not
+```
+
+---
+
+## 8. Database Connection
+
+**File**: `app/database.py`
+
+```python
+DATABASE_URL = "postgresql://postgres:admin@localhost:5432/milk_managemen_ai"
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+```
+
+All models inherit from `Base`. Alembic uses `Base.metadata` for migration generation.
+
+**Alembic** (`alembic/env.py`):
+- Imports all models via `import app.models`
+- Uses `Base.metadata` as target
+- Connects via `alembic.ini` sqlalchemy.url
+
+---
+
+## 9. Migration History
+
+8 migrations in chronological order:
+
+| Migration | Description |
 |-----------|-------------|
-| `*NotFoundError` | 404 |
-| `*Duplicate*Error` | 400 |
-| `Inactive*Error` | 400 |
-| `Invalid*Error` | 400 |
-| `SamePhoneNumberError` | 400 |
+| `cd5183b67dae` | Initial schema (users, routes) |
+| `de893ed2ffb7` | Add customers table |
+| `4085a4134c96` | Add milk_types and employees tables |
+| `b3c4d5e6f7a8` | Add employee fields |
+| `2a032b2352b4` | Add subscriptions table |
+| `3f8a1b2c4d5e` | Create delivery_exceptions table |
+| `4e5f6a7b8c9d` | Create token_books tables (3 tables) |
+| `1154a3a25414` | Remove is_active in update customer |
 
-## Soft Delete Pattern
+---
 
-All entities use soft-delete. No hard deletes exist.
+## 10. Testing Architecture
 
-```python
-# Service layer
-entity.is_active = False
-db.commit()
-return entity
+**File**: `tests/conftest.py`
 
-# Query filters
-db.query(Model).filter(Model.is_active == True).all()
+```
+Session-scoped:
+  setup_teardown_db -> drop_all + create_all (start) / drop_all + create_all (end)
+
+Per-test:
+  db_session -> begin transaction -> yield -> rollback
+  client -> TestClient(app) with overridden get_db
+  seed_* -> create test data within the rolled-back transaction
 ```
 
-## Key Design Decisions
+The key insight: every test runs inside a transaction that is rolled back, so the database state is always clean between tests, even though real PostgreSQL is used.
 
-1. **No repository pattern** — Services interact directly with SQLAlchemy Session
-2. **No unit-of-work** — Each service method commits independently
-3. **Exception-based error handling** — Custom exceptions mapped to HTTP errors in routers
-4. **Pydantic v2** — Using `model_config = ConfigDict(from_attributes=True)` for ORM mode
-5. **No global auth middleware** — Authentication is opt-in per endpoint via `Depends()`
-6. **PostgreSQL-specific** — Uses `server_default=func.now()` which is PG syntax
+---
 
-## File Inventory
+## 11. Constants and Enums
 
-### Implemented (with logic)
-- `app/core/config.py` — Constants (SECRET_KEY, ALGORITHM, EXPIRE_MINUTES)
-- `app/core/security.py` — hash_password, verify_password, create/decode JWT
-- `app/core/auth.py` — get_current_user dependency
-- `app/core/roles.py` — require_role dependency factory
-- `app/dependencies.py` — get_db, oauth2_scheme
-- `app/database.py` — engine, SessionLocal, Base
-- `app/models/` — 6 ORM models (User, Route, Customer, MilkType, Employee, Subscription)
-- `app/schemas/` — 6 schema modules with Pydantic models
-- `app/routers/` — 6 routers (auth, users, routes, customers, milk_types, subscriptions)
-- `app/services/` — 5 services (auth, user, route, milk_type, customer, subscription)
-- `app/exceptions/` — Exception classes across 4 modules
-- `app/constants/` — 3 enum modules (roles, statuses, shifts)
+**File**: `app/constants/statuses.py`
 
-### Empty Stubs (placeholder only)
-- `app/routers/employees.py`
-- `app/routers/token_books.py`
-- `app/routers/milk_allocation.py`
-- `app/routers/cash_sales.py`
-- `app/routers/reports.py`
-- `app/routers/dashboard.py`
-- `app/services/token_service.py`
-- `app/services/delivery_service.py`
-- `app/services/reconciliation_service.py`
-- `app/schemas/token_book.py`
-- `app/schemas/cash_sale.py`
-- `app/exceptions/token_book.py`
-- `app/exceptions/delivery.py`
-- `app/utils/validators.py`
-- `app/utils/helpers.py`
-- `app/common/__init__.py`
-- `app/core/constants.py`
+Defines enums for future use but currently not enforced in models/schemas:
+
+| Enum | Values |
+|------|--------|
+| SessionStatus | PLANNED, STARTED, COMPLETED, CLOSED |
+| PaymentStatus | PAID, PENDING, PARTIAL |
+| TokenStatus | COLLECTED, PENDING, CARRY_FORWARD |
+| DeliveryStatus | DELIVERED, SKIPPED, CANCELLED |
+| ExceptionType | VACATION, NO_MILK, HOLIDAY |
+| ExceptionStatus | ACTIVE, COMPLETED, CANCELLED |
+| BookIssueStatus | WAITING, ACTIVE, COMPLETED |
+| PaymentMode | PREPAID, POSTPAID |
+
+**File**: `app/constants/roles.py`
+```python
+class UserRole(str, Enum):
+    OWNER = "OWNER"
+    CHECKER = "CHECKER"
+    DELIVERY_PARTNER = "DELIVERY_PARTNER"
+```
+Note: EMPLOYEE role is used in code but not defined in this enum.
+
+**File**: `app/constants/shifts.py`
+```python
+class Shift(str, Enum):
+    MORNING = "MORNING"
+    EVENING = "EVENING"
+```
+Used in subscription schema import but not enforced as a field constraint.
+
+---
+
+## 12. Frontend Readiness
+
+**Current state**: Backend only. No CORS configured. No OpenAPI customization.
+
+**For future React frontend**:
+- CORS middleware needed in `main.py`
+- API prefix (`/api/v1`) should be added
+- Rate limiting not implemented
+- No WebSocket support
+- No file upload support

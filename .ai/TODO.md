@@ -1,126 +1,130 @@
-# TODO: Milk Management AI
+# TODO.md - Development Roadmap
 
-## Immediate (Required for MVP)
-
-### Security
-- [ ] Move hardcoded secrets to environment variables (DB URL, JWT secret)
-- [ ] Add `Depends(get_current_user)` to all non-login endpoints
-- [ ] Remove `test_kimi.py` or move API key to `.env`
-- [ ] Add CORS middleware configuration
-
-### Auth Hardening
-- [ ] Enforce role-based access on all endpoints (not just `/auth/owner-dashboard`)
-- [ ] Add refresh token mechanism
-
-### Schema Fixes
-- [ ] Make `CustomerUpdate` fields optional (currently requires all fields)
-- [ ] Add `UserResponse` Pydantic schema
-- [ ] Add `EmployeeResponse` Pydantic schema
-
-### Code Cleanup
-- [ ] Remove duplicate root `main.py`
-- [ ] Remove `app/temp.py`
-- [ ] Remove dead code in subscription service (redundant `is_active` checks)
+> Sprint-based development plan with dependencies and status.
 
 ---
 
-## Short-Term (Core Features)
+## Current State
 
-### Employee Module
-- [ ] Implement employee CRUD service
-- [ ] Implement employee router with all endpoints
-- [ ] Add employee tests
-- [ ] Link employee to user properly (user_id FK)
-
-### Token Book Module
-- [ ] Design TokenBook model (customer, shift, date, quantity, status)
-- [ ] Implement token service (issue, collect, carry-forward)
-- [ ] Implement token book router
-- [ ] Add token book schemas and exceptions
-- [ ] Add token book tests
-
-### Milk Allocation Module
-- [ ] Design MilkAllocation model (route, milk_type, shift, date, quantity)
-- [ ] Implement allocation service
-- [ ] Implement allocation router
-- [ ] Add tests
-
-### Delivery Module
-- [ ] Design Delivery model (subscription, shift, date, quantity_delivered, status)
-- [ ] Implement delivery service
-- [ ] Implement delivery router
-- [ ] Add tests
+**Completed**: Sprints 1, 2, and 4 (Core Token Book Management)
+**Test Count**: 218 tests passing
+**Total Tables**: 10
+**Total API Endpoints**: ~40
 
 ---
 
-## Medium-Term (Business Logic)
+## Sprint Plan
 
-### Cash Sales Module
-- [ ] Design CashSale model (milk_type, quantity, amount, date, route)
-- [ ] Implement cash sale service and router
-- [ ] Add tests
+### Sprint 1: Master Data (COMPLETED)
+- [x] User management (basic create)
+- [x] JWT Authentication (login, me, change-password)
+- [x] Route CRUD
+- [x] Customer CRUD with auto-generated codes
+- [x] Milk Type CRUD
+- [x] Employee CRUD with optional user linking
+- [x] Role-based access control
+- [x] Seed data script
 
-### Reconciliation Module
-- [ ] Design Reconciliation model (date, route, subscription, delivered, billed, difference)
-- [ ] Implement reconciliation service (compare allocations vs deliveries)
-- [ ] Implement reconciliation router
-- [ ] Add tests
+### Sprint 2: Subscriptions + Delivery Exceptions (COMPLETED)
+- [x] Subscription CRUD with joined queries
+- [x] Subscription deactivation
+- [x] Delivery Exception CRUD
+- [x] Date overlap detection
+- [x] Active subscription/milk type validation
+- [x] Subscription by customer endpoint
 
-### Reports Module
-- [ ] Implement daily delivery report endpoint
-- [ ] Implement customer-wise billing report
-- [ ] Implement route-wise summary report
-- [ ] Implement milk-type-wise sales report
+### Sprint 3: Daily Delivery Management (PLANNED)
+**Depends on**: Sprint 1, 2
+**Key Features**:
+- [ ] Daily delivery session (morning/evening shift)
+- [ ] Route-day assignment
+- [ ] Delivery checklist generation from active subscriptions
+- [ ] Skip/deliver marking per subscription
+- [ ] Delivery partner assignment per route per shift
+- [ ] Delivery status tracking (DELIVERED, SKIPPED, CANCELLED)
+- [ ] Integration with delivery exceptions (auto-skip)
 
-### Dashboard Module
-- [ ] Owner dashboard (total customers, active subscriptions, daily revenue)
-- [ ] Checker dashboard (pending verifications, route status)
-- [ ] Delivery partner dashboard (today's deliveries, pending stops)
+**New Tables Needed**:
+- `delivery_sessions` - Daily session per route per shift
+- `delivery_items` - Per-subscription delivery record in a session
+
+### Sprint 4 (Remaining): Token Register, Ledger, Warning Log
+**Depends on**: Sprint 3, 5
+**Key Features**:
+- [ ] Token Register - Sheet-by-sheet tracking within a book
+- [ ] Token Ledger - Complete token transaction history
+- [ ] Warning Log - Alerts for expiring books, unpaid balances
+
+**New Tables Needed**:
+- `token_register` - Sheet-level tracking
+- `token_ledger` - Transaction log
+- `warning_logs` - Warning/alert records
+
+### Sprint 5: Reconciliation (PLANNED)
+**Depends on**: Sprint 3
+**Key Features**:
+- [ ] Daily reconciliation per route/shift
+- [ ] Expected vs delivered comparison
+- [ ] Cash collection tracking
+- [ ] Shortage/surplus detection
+- [ ] Reconciliation approval workflow
+
+**New Tables Needed**:
+- `reconciliation_sessions` - Daily reconciliation record
+- `reconciliation_items` - Per-subscription reconciliation
+
+### Sprint 6: Payment Management (PLANNED)
+**Depends on**: Sprint 5
+**Key Features**:
+- [ ] Customer payment ledger
+- [ ] Advance payment tracking
+- [ ] Monthly bill generation
+- [ ] Payment collection by delivery partner
+- [ ] Outstanding balance tracking
+
+### Sprint 7: Reports and Analytics (PLANNED)
+**Depends on**: All above sprints
+**Key Features**:
+- [ ] Route-wise daily/weekly/monthly reports
+- [ ] Customer-wise consumption reports
+- [ ] Revenue reports
+- [ ] Collection efficiency reports
+- [ ] Token book utilization reports
+
+### Sprint 8: AI Business Intelligence (PLANNED)
+**Depends on**: Sprint 7
+**Key Features**:
+- [ ] Demand forecasting
+- [ ] Customer churn prediction
+- [ ] Route optimization suggestions
+- [ ] Anomaly detection (unusual orders, payments)
+
+### Sprint 9: Frontend - React (PLANNED)
+**Depends on**: All backend
+**Key Features**:
+- [ ] Owner dashboard
+- [ ] Customer management UI
+- [ ] Delivery partner mobile app
+- [ ] Subscription management
+- [ ] Token book tracking
+- [ ] Reports dashboard
+
+### Sprint 10: Testing and Deployment (PLANNED)
+**Key Features**:
+- [ ] Comprehensive test coverage (target: 95%+)
+- [ ] API documentation finalization
+- [ ] Docker containerization
+- [ ] CI/CD pipeline
+- [ ] Production deployment
+- [ ] Performance testing
+- [ ] Security audit
 
 ---
 
-## Long-Term (Quality & Scale)
+## Immediate Next Steps
 
-### Database Improvements
-- [ ] Add timestamps to `users` and `employees` tables
-- [ ] Add indexes on frequently queried columns (route_id, status, customer_code)
-- [ ] Add DB-level cascade rules on foreign keys
-- [ ] Add NOT NULL constraints where missing
-
-### Code Quality
-- [ ] Standardize exception hierarchy (all inherit from `BusinessException`)
-- [ ] Standardize service return types (all return ORM models or all return response schemas)
-- [ ] Use Pydantic enums in models (replace raw strings for role, status)
-- [ ] Add structured logging throughout
-- [ ] Add API rate limiting
-- [ ] Fix customer code race condition (use DB sequence)
-
-### Testing
-- [ ] Add subscription CRUD tests
-- [ ] Add employee CRUD tests
-- [ ] Add integration tests for auth flow
-- [ ] Add test coverage reporting
-
-### Documentation
-- [ ] Write README.md with setup, usage, and development instructions
-- [ ] Add OpenAPI descriptions to all endpoints
-- [ ] Add inline docstrings to all service methods
-
-### DevOps
-- [ ] Add Docker Compose for PostgreSQL + app
-- [ ] Add CI/CD pipeline
-- [ ] Add environment-based configuration (dev/staging/prod)
-- [ ] Add health check endpoint
-
----
-
-## Backlog (Future V2)
-
-- [ ] Mobile app for delivery partners
-- [ ] Online payment integration
-- [ ] QR code token system
-- [ ] Multi-branch support
-- [ ] Inventory management
-- [ ] Vehicle/fleet management
-- [ ] AI-powered demand forecasting
-- [ ] Customer notification system (SMS/WhatsApp)
+1. **Start Sprint 3**: Design daily delivery management tables and APIs
+2. **Address tech debt**: Move SECRET_KEY to env, fix exception hierarchy
+3. **Add API versioning**: Prefix all routes with `/api/v1`
+4. **Add CORS middleware**: Required before frontend work
+5. **Add pagination**: For all list endpoints

@@ -1,138 +1,108 @@
-# Technical Debt: Milk Management AI
+# TECH_DEBT.md - Technical Debt and Known Issues
 
-## Critical Issues
-
-### 1. Hardcoded Secrets in Source Code
-- **Location:** `app/database.py:7-9` (DB password), `app/core/config.py:1` (JWT secret)
-- **Risk:** Secret leakage via version control
-- **Fix:** Move to environment variables via `pydantic-settings` or `python-dotenv`
-
-### 2. No Authentication on Most Endpoints
-- **Location:** All routers except `auth.py`
-- **Risk:** Unauthenticated access to all CRUD operations (create/delete customers, routes, etc.)
-- **Fix:** Add `Depends(get_current_user)` to all non-login endpoints
-
-### 3. Exposed API Key in test_kimi.py
-- **Location:** `test_kimi.py` — contains NVIDIA API key in plaintext
-- **Risk:** API key leakage
-- **Fix:** Remove file or move key to environment variable
+> Issues that should be addressed but haven't been yet.
 
 ---
 
 ## High Priority
 
+### 1. Hardcoded Secret Key
+**File**: `app/core/config.py`
+```python
+SECRET_KEY = "milk_management_secret_key_2026"
+```
+Should use environment variable. Security risk in production.
+
+### 2. Database Name Typo
+Database is `milk_managemen_ai` (missing 't' in management). Consistent everywhere but confusing.
+
+### 3. No CORS Configuration
+No CORS middleware configured. Required before frontend integration (Sprint 9).
+
 ### 4. Inconsistent Exception Hierarchy
-- **Location:** `app/exceptions/`
-- **Issue:** `BusinessException` base class exists but is only used by `route.py` and `milk_type.py` exceptions. All others (`user`, `subscription`, `customer`) inherit directly from `Exception`.
-- **Impact:** Cannot catch all business errors with a single handler
-- **Fix:** Make all domain exceptions inherit from `BusinessException`
-
-### 5. Inconsistent Return Types from Services
-- **Location:** All services
-- **Issue:** Some return ORM models, some return `dict` (subscription_service.get_by_id), some return `None`
-- **Impact:** Fragile type expectations in routers
-- **Fix:** Standardize service return types (prefer ORM models or use typed response schemas)
-
-### 6. Inconsistent Service Error Handling
-- **Location:** `app/services/auth_service.py`, `app/services/user_service.py`
-- **Issue:** Return `None` on errors instead of raising exceptions (unlike other services that raise typed exceptions)
-- **Impact:** Routers must check for None, inconsistent error responses
-- **Fix:** Raise exceptions consistently across all services
-
-### 7. No Response Schema for Users/Employees
-- **Location:** `app/schemas/user.py`, `app/schemas/employee.py`
-- **Issue:** `UserCreate` exists but no `UserResponse`. `EmployeeCreate` exists but no `EmployeeResponse`
-- **Impact:** User/employee data returned as raw ORM objects (may leak internal fields)
-- **Fix:** Add `UserResponse` and `EmployeeResponse` Pydantic schemas
-
-### 8. CustomerUpdate Has Required Fields
-- **Location:** `app/schemas/customer.py`
-- **Issue:** `CustomerUpdate` inherits all required fields from `CustomerBase`, so you must send ALL fields on update
-- **Impact:** Partial updates not possible (unlike SubscriptionUpdate which makes fields optional)
-- **Fix:** Make all fields optional in `CustomerUpdate`
+`BusinessException` base class exists in `exceptions/base.py` but many exceptions extend `Exception` directly:
+- `route.py`: Extend `BusinessException` ✓
+- `milk_type.py`: Extend `BusinessException` ✓
+- `user.py`: Extend `Exception` directly
+- `customer.py`: Extend `Exception` directly
+- `employee.py`: Extend `Exception` directly
+- `subscription.py`: Extend `Exception` directly
+- `delivery_exception.py`: Extend `Exception` directly
+- `token_book.py`: Extend `Exception` directly
 
 ---
 
 ## Medium Priority
 
-### 9. No DB-Level Cascade Rules
-- **Location:** All model FK definitions
-- **Issue:** No `ondelete` or `onupdate` cascade behavior defined on foreign keys
-- **Impact:** Orphaned records possible if referential integrity breaks at application level
-- **Fix:** Add appropriate cascade rules (e.g., `SET NULL` or `RESTRICT`)
+### 5. Constants Not Enforced
+Status/role enums defined in `constants/` are not used in models or schemas:
+- `UserRole` enum not used - roles stored as plain strings
+- `Shift` enum imported in subscription schema but not used as constraint
+- `SessionStatus`, `TokenStatus`, `DeliveryStatus` defined but never referenced
+- `BookIssueStatus`, `PaymentStatus`, `PaymentMode` defined but not enforced
 
-### 10. Missing Database Indexes
-- **Location:** Model files
-- **Issue:** Only `id` columns are indexed. Common query columns (`customer_code`, `route_id`, `status`, `is_active`) lack indexes
-- **Impact:** Slow queries at scale
-- **Fix:** Add indexes on frequently queried/filtered columns
+### 6. Users Router Missing CRUD
+`/users` only has GET (list) and POST (create). No update or delete endpoints.
 
-### 11. Race Condition in Customer Code Generation
-- **Location:** `app/services/customer_service.py`
-- **Issue:** Customer code is generated by querying the last record's code and incrementing. Under concurrent requests, two customers could get the same code
-- **Impact:** Potential unique constraint violation or duplicate codes
-- **Fix:** Use database sequence or UUID-based codes
+### 7. No Pagination
+All list endpoints return every active record. Will cause performance issues with large datasets.
 
-### 12. No Timestamps on Users and Employees
-- **Location:** `app/models/user.py`, `app/models/employee.py`
-- **Issue:** No `created_at`/`updated_at` columns
-- **Impact:** Cannot audit when users/employees were created or modified
-- **Fix:** Add timestamp columns and migration
+### 8. No Filtering/Search
+List endpoints have no query parameters. Can't filter by status, route, date range, etc.
 
-### 13. Hardcoded String Columns Without Length
-- **Location:** `app/models/route.py:23-24`
-- **Issue:** `route_code` and `route_name` use `String` without length constraint
-- **Impact:** DB may use max length or unlimited, inconsistent with other models
-- **Fix:** Add explicit length (e.g., `String(20)`, `String(100)`)
+### 9. Hardcoded Values in Services
+- Customer code generation: `f"C{next_number:05d}"` - hardcoded format
+- Employee code generation: `f"E{next_number:05d}"` - hardcoded format
+- Default statuses: "ACTIVE", "WAITING", "PENDING" hardcoded in service code
 
-### 14. Dead Code in Subscription Service
-- **Location:** `app/services/subscription_service.py` lines 40-41, 55-56
-- **Issue:** `is_active` check is redundant because the query already filters by `is_active=True`
-- **Impact:** Code clarity, misleading logic
-- **Fix:** Remove redundant checks
-
-### 15. Unused Constants/Enums
-- **Location:** `app/constants/statuses.py`, `app/constants/shifts.py`, `app/constants/roles.py`
-- **Issue:** Enums defined but not used anywhere in models or services. Models use raw strings for `role` and `status`
-- **Impact:** Enums provide no actual type safety
-- **Fix:** Use enums in models and service validation
+### 10. Empty Directories
+`app/common/` and `app/utils/` exist but contain no code. Should be removed or utilized.
 
 ---
 
 ## Low Priority
 
-### 16. Duplicate Root main.py
-- **Location:** Root `main.py` vs `app/main.py`
-- **Issue:** Root `main.py` is a minimal FastAPI app that conflicts with `app/main.py`
-- **Impact:** Confusion about which entry point to use
-- **Fix:** Remove root `main.py` or make it import from `app.main`
+### 11. Service Return Type Inconsistency
+Some services return SQLAlchemy model objects, others return dicts. Mixed patterns:
+- Routes, MilkTypes, Customers: Return model objects
+- Subscriptions, DeliveryExceptions, TokenBooks: Return manually constructed dicts
 
-### 17. Empty Placeholder Files
-- **Location:** `app/utils/validators.py`, `app/utils/helpers.py`, `app/common/__init__.py`, `app/core/constants.py`, `app/schemas/token_book.py`, `app/schemas/cash_sale.py`, `app/exceptions/token_book.py`, `app/exceptions/delivery.py`
-- **Issue:** Empty files serve no purpose yet
-- **Impact:** Clutter, misleading imports
-- **Fix:** Create only when needed, or add a comment noting they are planned
+### 12. No Request ID / Logging
+No structured logging or request ID tracking for debugging.
 
-### 18. Empty README.md
-- **Location:** `README.md`
-- **Issue:** No documentation about setup, usage, or development
-- **Impact:** New contributors have no guidance
-- **Fix:** Add setup instructions, API overview, contribution guide
+### 13. No Rate Limiting
+No rate limiting on any endpoint.
 
-### 19. app/temp.py Left in Codebase
-- **Location:** `app/temp.py`
-- **Issue:** One-shot script that prints a hashed password — development artifact
-- **Impact:** Minor clutter
-- **Fix:** Remove from codebase
+### 14. Test DB Name Matching
+Test DB URL hardcoded to same production DB. No separate test database.
 
-### 20. No Logging Configuration
-- **Location:** Application-wide
-- **Issue:** No structured logging setup. FastAPI uses default logging
-- **Impact:** Difficult to debug issues in production
-- **Fix:** Add logging configuration with appropriate levels
+### 15. User Service Uses Different Pattern
+`user_service.create()` returns `None` on duplicate instead of raising exception (inconsistent with other services).
 
-### 21. No CORS Configuration
-- **Location:** `app/main.py`
-- **Issue:** No CORS middleware configured
-- **Impact:** Frontend applications cannot call the API from different origins
-- **Fix:** Add `CORSMiddleware` with appropriate origins
+### 16. User Model Missing Timestamps
+The `users` table doesn't have `created_at`/`updated_at` columns unlike all other tables.
+
+---
+
+## Architecture Improvements Needed
+
+### For Sprint 3+ (Daily Delivery Management)
+- Need a proper delivery session/daily log table
+- Need shift-based delivery tracking
+- Need route-day assignment capability
+
+### For Sprint 5+ (Reconciliation)
+- Need daily totals aggregation
+- Need cash collection tracking
+- Need discrepancy detection
+
+### For Sprint 6+ (Payment Management)
+- Need comprehensive payment ledger
+- Need advance payment tracking
+- Need bill generation
+
+### For Sprint 9+ (Frontend)
+- API versioning (`/api/v1/`)
+- CORS middleware
+- OpenAPI customization (title, description, version)
+- Request/response logging middleware

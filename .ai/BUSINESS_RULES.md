@@ -1,111 +1,150 @@
-# Business Rules: Milk Management AI
+# BUSINESS_RULES.md - Business Domain Rules
 
-## Domain Overview
-
-This system manages a **milk distribution business** operating on a subscription model. Customers subscribe to milk types, receive deliveries on scheduled routes during morning/evening shifts, and are billed based on delivered quantities.
+> All verified business rules enforced in the codebase.
 
 ---
 
-## Master Data Rules
+## 1. Milk Distribution Business Model
 
-### Routes
-1. Each route has a **unique code** and **unique name** (e.g., "Downtown", "RT001")
-2. Routes can be soft-deleted (deactivated) but not hard-deleted
-3. Customers must belong to an **active route**
-4. An inactive route cannot have new customers or subscriptions created against it
+A milk distribution business delivers milk to customers on fixed routes. Customers subscribe to milk types (e.g., "Full Cream Milk 1000ml") and specify daily quantities for morning and evening shifts. Delivery partners carry physical "token books" - prepaid booklets that customers exchange for milk.
 
-### Milk Types
-1. Each milk type has a **unique name** (e.g., "Full Cream 1000ml")
-2. Volume must be positive (in milliliters)
-3. Milk types can be soft-deleted (deactivated)
-4. An inactive milk type cannot be used in new subscriptions
+### Key Concepts
 
-### Customers
-1. Each customer gets an **auto-generated code**: `C00001`, `C00002`, etc. (sequential, zero-padded to 5 digits)
-2. `primary_phone` must be **exactly 10 digits** and globally unique
-3. `alternate_phone` (if provided) must be **exactly 10 digits** and **different from primary_phone**
-4. Each customer belongs to exactly one active route
-5. Customer codes are sequential across the entire system (not per-route)
-6. Soft-deleting a customer does not cascade-deactivate subscriptions
-
-### Users
-1. Username must be unique
-2. Passwords are bcrypt-hashed before storage
-3. Roles: `OWNER`, `CHECKER`, `DELIVERY_PARTNER` (enum defined but only string-validated in model)
-4. No timestamps tracked on user records
+- **Route**: A geographical delivery zone grouping customers
+- **Customer**: A household receiving milk deliveries, assigned to one route
+- **Milk Type**: A product with name and volume (e.g., "Toned Milk 500ml")
+- **Subscription**: A customer's recurring order linking to a milk type with shift quantities
+- **Delivery Exception**: A temporary pause (vacation, holiday) affecting a subscription
+- **Token Identity**: A unique token number assigned to a customer for a specific milk type
+- **Token Book**: A physical book of sheets issued to a customer, tracked by issue number
+- **Token Book Payment**: Payment record for a token book (can be prepaid, partial, or postpaid)
 
 ---
 
-## Subscription Rules
+## 2. Customer Management Rules
 
-1. A subscription links a **customer** to a **milk type** with morning and evening quantities
-2. A customer can only have **one active subscription per milk type** (no duplicates)
-3. At least one of `morning_quantity` or `evening_quantity` must be > 0
-4. Both quantities must be >= 0 (no negative values)
-5. Deactivation sets `is_active=False` and `status="INACTIVE"` (soft-delete)
-6. After deactivation, the customer can re-subscribe to the same milk type
-7. Subscriptions can be updated (partial update — only non-null fields changed)
-8. Both customer and milk type must be **active** to create a subscription
+1. **Auto-generated codes**: Customer codes are `C{NNNNN}` (e.g., C00001), auto-incremented from the highest existing ID
+2. **Unique phone**: primary_phone must be unique across all customers
+3. **Phone validation**: primary_phone and alternate_phone must be 10 characters exactly
+4. **Different phones**: primary_phone and alternate_phone cannot be the same
+5. **Route required**: Every customer must be assigned to a valid, active route
+6. **Soft delete**: Customers are never physically deleted, only deactivated (is_active=False)
 
 ---
 
-## Authentication & Authorization Rules
+## 3. Route Management Rules
 
-1. Authentication is JWT-based (HS256, 30-minute expiry)
-2. JWT payload contains `sub` (username) and `role`
-3. `get_current_user` dependency decodes JWT and fetches user from DB
-4. `require_role(["ROLE"])` factory creates role-checking dependencies
-5. Only `/auth/me` and `/auth/owner-dashboard` are auth-protected currently
-6. **All other endpoints are unprotected** (no auth dependency applied)
+1. **Unique code**: route_code must be unique
+2. **Unique name**: route_name must be unique
+3. **Active check**: Cannot assign inactive route to customer or employee
+4. **Soft delete**: Routes are deactivated, not deleted
 
 ---
 
-## Token Accounting Rules (Planned)
+## 4. Milk Type Rules
 
-1. Tokens represent milk delivery entitlements per customer per shift
-2. A token can be: COLLECTED, PENDING, or CARRY_FORWARD
-3. Daily token settlement tracks what was delivered vs. what was owed
-4. Pending tokens carry forward to the next day
-5. Cash sales are separate from token-based deliveries
+1. **Unique name**: milk_name must be unique
+2. **Positive volume**: volume_ml must be > 0
+3. **Soft delete**: Milk types are deactivated, not deleted
 
 ---
 
-## Delivery Workflow Rules (Planned)
+## 5. Employee Management Rules
 
-1. Morning and evening shifts are independent
-2. Each shift has its own milk allocation per route
-3. Delivery partners record deliveries per customer per shift
-4. Checker verifies delivered quantities against subscriptions
-5. Discrepancies trigger reconciliation workflow
-
----
-
-## Payment & Reconciliation Rules (Planned)
-
-1. Payment statuses: PAID, PENDING, PARTIAL
-2. Reconciliation matches subscriptions against actual deliveries
-3. Customer pays based on delivered quantities (not subscribed quantities)
-4. Advance credits can be applied to future deliveries
+1. **Auto-generated codes**: Employee codes are `E{NNNNN}`
+2. **Unique phone**: Phone must be unique
+3. **Optional user link**: Employee can optionally have a linked User account
+4. **All-or-nothing credentials**: If providing username during creation, must also provide password and confirm_password (and vice versa)
+5. **OWNER-only creation**: Only OWNER role can create employees or update credentials
+6. **Route validation**: If route_id provided, route must exist and be active
+7. **Username uniqueness**: If creating a linked user, username must not already exist
 
 ---
 
-## Session/Route Status Workflow (Planned)
+## 6. Subscription Rules
 
-```
-PLANNED → STARTED → COMPLETED → CLOSED
-```
-
-1. A delivery session starts as PLANNED
-2. When route delivery begins, status moves to STARTED
-3. After all deliveries on route are completed → COMPLETED
-4. After financial reconciliation → CLOSED
+1. **Unique active subscription**: Only one active subscription per customer + milk_type combination
+2. **Quantity validation**: At least one of morning_quantity or evening_quantity must be > 0
+3. **Active customer required**: Cannot create subscription for inactive customer
+4. **Active milk type required**: Cannot create subscription with inactive milk type
+5. **Status default**: New subscriptions default to status="ACTIVE"
+6. **Deactivation**: DELETE sets is_active=False AND status="INACTIVE"
+7. **Update validation**: After update, quantities cannot both be 0
 
 ---
 
-## Data Integrity Rules
+## 7. Delivery Exception Rules
 
-1. All entities use **soft-delete** (`is_active` flag) — no hard deletes
-2. Foreign keys are validated at the service layer (not DB-level cascades)
-3. Duplicate detection is done by querying before insert/update
-4. `customer_code` generation queries the last record — potential race condition under concurrent creates
-5. Timestamps are server-generated (`server_default=func.now()`)
+1. **Active subscription required**: Cannot create exception for inactive subscription
+2. **Date validation**: end_date must be >= start_date
+3. **No overlaps**: Cannot create overlapping exceptions for the same subscription
+4. **Single-day exception**: If end_date is null, it's a single-day exception (start_date == end_date for overlap check)
+5. **Overlap detection logic**: Two date ranges overlap if: `start_A <= end_B AND end_A >= start_B`
+6. **Status**: Defaults to "ACTIVE", cancellation sets status="CANCELLED"
+7. **Exception types**: VACATION, NO_MILK, HOLIDAY (defined in constants but stored as string)
+
+---
+
+## 8. Token Identity Rules
+
+1. **Composite uniqueness**: (customer_id, milk_type_id, token_number) must be unique
+2. **Active customer required**: Customer must exist and be active
+3. **Active milk type required**: MilkType must exist and be active
+4. **Token number**: Positive integer
+5. **Update restriction**: Only token_number can be updated (customer and milk_type are immutable)
+
+---
+
+## 9. Token Book Issue Rules
+
+1. **One active book per identity**: Cannot issue a new book if one is already ACTIVE for the same token_identity_id
+2. **Unique issue_number**: Issue number must be unique per token identity
+3. **Default status**: New issues start with status="WAITING"
+4. **Status lifecycle**: WAITING -> ACTIVE -> COMPLETED
+5. **current_sheet**: Starts at 0, incremented as sheets are used
+
+---
+
+## 10. Token Book Payment Rules
+
+1. **Amount validation**: amount_paid cannot exceed book_price
+2. **Auto-calculation**: balance_amount = book_price - amount_paid
+3. **Auto status determination**:
+   - balance_amount <= 0 -> "PAID"
+   - amount_paid > 0 AND balance_amount > 0 -> "PARTIAL"
+   - amount_paid == 0 -> "PENDING"
+4. **Payment modes**: PREPAID or POSTPAID
+5. **Recalculation on update**: When payment is updated, balance and status are always recalculated
+
+---
+
+## 11. Authentication Rules
+
+1. **JWT expiry**: Tokens expire after 30 minutes
+2. **Algorithm**: HS256
+3. **Token payload**: {sub: username, role: role, exp: datetime}
+4. **Password hashing**: bcrypt via passlib
+5. **Password validation**: Minimum 6 characters for change-password
+6. **Change password**: Must provide current password, new password must differ from current, confirm must match
+
+---
+
+## 12. Authorization Rules
+
+1. **Role hierarchy**: OWNER > CHECKER > DELIVERY_PARTNER > EMPLOYEE
+2. **Enforcement**: Only employee CRUD (create, credentials) and owner-dashboard check roles
+3. **Default**: Most endpoints have no role restriction
+4. **Access denied**: Returns HTTP 403 with "Access denied" message
+
+---
+
+## 13. Soft Delete Pattern
+
+All entities use soft delete:
+1. Every table has `is_active = Boolean, default=True`
+2. DELETE endpoints set `is_active = False`
+3. All read queries filter `is_active == True`
+4. Some entities also set a status field on deactivation:
+   - Subscription -> "INACTIVE"
+   - DeliveryException -> "CANCELLED"
+5. Records are never physically deleted from the database
