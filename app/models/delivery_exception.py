@@ -10,9 +10,9 @@ from sqlalchemy.sql import func
 from app.database import Base
 
 
-class Subscription(Base):
+class DeliveryException(Base):
 
-    __tablename__ = "subscriptions"
+    __tablename__ = "delivery_exceptions"
 
     id = Column(
         Integer,
@@ -20,39 +20,19 @@ class Subscription(Base):
         index=True
     )
 
-    customer_id = Column(
+    subscription_id = Column(
         Integer,
-        ForeignKey("customers.id"),
+        ForeignKey("subscriptions.id"),
         nullable=False
     )
 
-    milk_type_id = Column(
-        Integer,
-        ForeignKey("milk_types.id"),
-        nullable=False
-    )
-
-    morning_quantity = Column(
-        Integer,
-        default=0,
-        nullable=False
-    )
-
-    evening_quantity = Column(
-        Integer,
-        default=0,
-        nullable=False
-    )
-
-    status = Column(
+    exception_type = Column(
         String(20),
-        default="ACTIVE",
         nullable=False
     )
 
     start_date = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
         nullable=False
     )
 
@@ -61,9 +41,15 @@ class Subscription(Base):
         nullable=True
     )
 
-    remarks = Column(
+    reason = Column(
         String(255),
         nullable=True
+    )
+
+    status = Column(
+        String(20),
+        default="ACTIVE",
+        nullable=False
     )
 
     is_active = Column(
@@ -83,16 +69,7 @@ class Subscription(Base):
         onupdate=func.now()
     )
 
-    customer = relationship(
-        "Customer",
-        back_populates="subscriptions"
-    )
-
-    milk_type = relationship(
-        "MilkType"
-    )
-
-    delivery_exceptions = relationship(
-        "DeliveryException",
-        back_populates="subscription"
+    subscription = relationship(
+        "Subscription",
+        back_populates="delivery_exceptions"
     )

@@ -34,3 +34,21 @@ class DeliveryStatus(str, Enum):
     SKIPPED = "SKIPPED"
 
     CANCELLED = "CANCELLED"
+
+
+class ExceptionType(str, Enum):
+
+    VACATION = "VACATION"
+
+    NO_MILK = "NO_MILK"
+
+    HOLIDAY = "HOLIDAY"
+
+
+class ExceptionStatus(str, Enum):
+
+    ACTIVE = "ACTIVE"
+
+    COMPLETED = "COMPLETED"
+
+    CANCELLED = "CANCELLED"

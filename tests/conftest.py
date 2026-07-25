@@ -15,6 +15,7 @@ from app.models.customer import Customer
 from app.models.milk_type import MilkType
 from app.models.employee import Employee
 from app.models.subscription import Subscription
+from app.models.delivery_exception import DeliveryException
 
 ACTUAL_DB_URL = os.getenv(
     "TEST_DB_URL",
@@ -219,3 +220,21 @@ def seed_subscription(db_session, seed_customer, seed_milk_type):
     db_session.commit()
     db_session.refresh(subscription)
     return subscription
+
+
+@pytest.fixture
+def seed_delivery_exception(db_session, seed_subscription):
+    from datetime import datetime, timedelta
+    exception = DeliveryException(
+        subscription_id=seed_subscription.id,
+        exception_type="VACATION",
+        start_date=datetime(2026, 8, 1),
+        end_date=datetime(2026, 8, 5),
+        reason="Family vacation",
+        status="ACTIVE",
+        is_active=True
+    )
+    db_session.add(exception)
+    db_session.commit()
+    db_session.refresh(exception)
+    return exception
