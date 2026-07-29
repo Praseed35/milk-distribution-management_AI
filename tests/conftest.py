@@ -258,9 +258,13 @@ def seed_token_identity(db_session, seed_customer, seed_milk_type):
 
 
 @pytest.fixture
-def seed_token_book_issue(db_session, seed_token_identity):
+def seed_token_book_issue(db_session, seed_token_identity, seed_customer, seed_milk_type):
     issue = TokenBookIssue(
         token_identity_id=seed_token_identity.id,
+        customer_id=seed_customer.id,
+        milk_type_id=seed_milk_type.id,
+        book_number="BK-001",
+        total_sheets=30,
         issue_number=1,
         current_sheet=0,
         status="WAITING",

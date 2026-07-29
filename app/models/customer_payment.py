@@ -3,6 +3,7 @@ from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
+from sqlalchemy import Numeric
 from sqlalchemy import String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -10,9 +11,9 @@ from sqlalchemy.sql import func
 from app.database import Base
 
 
-class Customer(Base):
+class CustomerPayment(Base):
 
-    __tablename__ = "customers"
+    __tablename__ = "customer_payments"
 
     id = Column(
         Integer,
@@ -20,37 +21,48 @@ class Customer(Base):
         index=True
     )
 
-    customer_code = Column(
-        String(20),
-        unique=True,
-        nullable=False
-    )
-
-    customer_name = Column(
-        String(100),
-        nullable=False
-    )
-
-    primary_phone = Column(
-        String(15),
-        unique=True,
-        nullable=False
-    )
-
-    alternate_phone = Column(
-        String(15),
-        nullable=True
-    )
-
-    address = Column(
-        String(255),
-        nullable=True
-    )
-
-    route_id = Column(
+    customer_id = Column(
         Integer,
-        ForeignKey("routes.id"),
+        ForeignKey("customers.id"),
         nullable=False
+    )
+
+    payment_date = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
+
+    amount = Column(
+        Numeric(10, 2),
+        nullable=False
+    )
+
+    payment_mode = Column(
+        String(20),
+        nullable=False
+    )
+
+    payment_type = Column(
+        String(20),
+        nullable=False
+    )
+
+    reference_number = Column(
+        String(50),
+        nullable=True
+    )
+
+    bill_id = Column(
+        Integer,
+        ForeignKey("customer_bills.id"),
+        nullable=True
+    )
+
+    collected_by = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True
     )
 
     remarks = Column(
@@ -75,32 +87,16 @@ class Customer(Base):
         onupdate=func.now()
     )
 
-    route = relationship(
-        "Route",
-        back_populates="customers"
+    customer = relationship(
+        "Customer",
+        back_populates="payments"
     )
 
-    subscriptions = relationship(
-        "Subscription",
-        back_populates="customer"
-    )
-
-    deliveries = relationship(
-        "DailyDelivery",
-        back_populates="customer"
-    )
-
-    token_book_issues = relationship(
-        "TokenBookIssue",
-        back_populates="customer"
-    )
-
-    payments = relationship(
-        "CustomerPayment",
-        back_populates="customer"
-    )
-
-    bills = relationship(
+    bill = relationship(
         "CustomerBill",
-        back_populates="customer"
+        back_populates="payments"
+    )
+
+    collector = relationship(
+        "User"
     )

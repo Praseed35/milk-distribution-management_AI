@@ -556,6 +556,10 @@ class TestCreateTokenBookPayment:
 
         issue2 = TokenBookIssue(
             token_identity_id=seed_token_book_issue.token_identity_id,
+            customer_id=seed_token_book_issue.customer_id,
+            milk_type_id=seed_token_book_issue.milk_type_id,
+            book_number=seed_token_book_issue.book_number,
+            total_sheets=seed_token_book_issue.total_sheets,
             issue_number=10,
             status="WAITING",
             is_active=True
@@ -593,6 +597,10 @@ class TestCreateTokenBookPayment:
 
         issue2 = TokenBookIssue(
             token_identity_id=seed_token_book_issue.token_identity_id,
+            customer_id=seed_token_book_issue.customer_id,
+            milk_type_id=seed_token_book_issue.milk_type_id,
+            book_number=seed_token_book_issue.book_number,
+            total_sheets=seed_token_book_issue.total_sheets,
             issue_number=11,
             status="WAITING",
             is_active=True
@@ -629,6 +637,10 @@ class TestCreateTokenBookPayment:
 
         issue2 = TokenBookIssue(
             token_identity_id=seed_token_book_issue.token_identity_id,
+            customer_id=seed_token_book_issue.customer_id,
+            milk_type_id=seed_token_book_issue.milk_type_id,
+            book_number=seed_token_book_issue.book_number,
+            total_sheets=seed_token_book_issue.total_sheets,
             issue_number=12,
             status="WAITING",
             is_active=True
@@ -665,6 +677,10 @@ class TestCreateTokenBookPayment:
 
         issue2 = TokenBookIssue(
             token_identity_id=seed_token_book_issue.token_identity_id,
+            customer_id=seed_token_book_issue.customer_id,
+            milk_type_id=seed_token_book_issue.milk_type_id,
+            book_number=seed_token_book_issue.book_number,
+            total_sheets=seed_token_book_issue.total_sheets,
             issue_number=13,
             status="WAITING",
             is_active=True

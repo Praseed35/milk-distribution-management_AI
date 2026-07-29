@@ -18,6 +18,9 @@ from app.routers.subscriptions import router as subscription_router
 from app.routers.employees import router as employee_router
 from app.routers.delivery_exceptions import router as delivery_exception_router
 from app.routers.token_books import router as token_book_router
+from app.routers.deliveries import router as deliveries_router
+from app.routers.delivery_edit import router as delivery_edit_router
+from app.routers.payments import router as payment_router
 
 
 
@@ -34,6 +37,9 @@ app.include_router(subscription_router)
 app.include_router(employee_router)
 app.include_router(delivery_exception_router)
 app.include_router(token_book_router)
+app.include_router(deliveries_router)
+app.include_router(delivery_edit_router)
+app.include_router(payment_router)
 
 @app.get("/")
 def home():

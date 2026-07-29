@@ -320,6 +320,10 @@ def create_book_issue(
 
     new_issue = TokenBookIssue(
         token_identity_id=issue.token_identity_id,
+        customer_id=identity.customer_id,
+        milk_type_id=identity.milk_type_id,
+        book_number=f"BK-{identity.token_number:03d}-{issue.issue_number:03d}",
+        total_sheets=30,
         issue_number=issue.issue_number,
         remarks=issue.remarks
     )

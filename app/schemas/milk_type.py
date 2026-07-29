@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
@@ -14,6 +15,11 @@ class MilkTypeBase(BaseModel):
 
     volume_ml: int = Field(
         gt=0
+    )
+
+    unit_price: Decimal = Field(
+        default=0,
+        ge=0
     )
 
     description: str | None = Field(
@@ -53,6 +59,8 @@ class MilkTypeSummaryResponse(BaseModel):
     milk_name: str
 
     volume_ml: int
+
+    unit_price: Decimal = Decimal(0)
 
     model_config = ConfigDict(
         from_attributes=True
