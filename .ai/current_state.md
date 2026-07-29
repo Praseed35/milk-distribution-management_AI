@@ -1,6 +1,6 @@
 # CURRENT_STATE.md - Project Snapshot
 
-> Snapshot of the project as of July 2026.
+> Snapshot of the project as of July 29, 2026 — Sprint 6 complete.
 
 ---
 
@@ -8,12 +8,13 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Tables | 10 |
-| Total API Endpoints | ~40 |
-| Total Tests | 218 |
-| Test Status | All passing |
-| Sprints Completed | 3 (1, 2, 4-core) |
-| Next Sprint | Sprint 3 (Daily Delivery) |
+| Total Tables | **17** (14 original + customer_payments, customer_bills, customer_bill_items) |
+| Total API Endpoints | **~78** (39 original + 25 delivery + 14 payment) |
+| Total Test Files | **11** (9 original + test_daily_delivery + test_payments) |
+| Test Status | **319 passed, 0 failed** |
+| Sprints Code-Complete | **6** (1, 2, 3, 4-core, 5, 6) |
+| Sprints Tested | **6** (1, 2, 3, 4-core, 5, 6) |
+| Next Priority | **Sprint 7: Reports & Analytics** |
 | Database | PostgreSQL localhost:5432/milk_managemen_ai |
 | Framework | FastAPI |
 | ORM | SQLAlchemy 2.0 |
@@ -22,19 +23,19 @@
 
 ---
 
-## File Count by Directory
+## File Count by Directory (Actual)
 
 | Directory | Files | Purpose |
 |-----------|-------|---------|
 | app/core/ | 4 | Security, auth, config, roles |
-| app/constants/ | 3 | Enum definitions |
-| app/models/ | 10 (+ __init__) | SQLAlchemy models |
-| app/schemas/ | 10 (+ __init__) | Pydantic schemas |
-| app/routers/ | 9 (+ __init__) | API routers |
-| app/services/ | 9 (+ __init__) | Business logic |
-| app/exceptions/ | 9 (+ __init__, + base) | Custom exceptions |
-| tests/ | 10 test files + conftest | Test suite |
-| alembic/versions/ | 8 | Database migrations |
+| app/constants/ | 3 | Enum definitions (incl. CustomerPaymentMode, BillStatus) |
+| app/models/ | **17** (+ __init__) | SQLAlchemy models (incl. payment models) |
+| app/schemas/ | **15** (+ __init__) | Pydantic schemas (incl. delivery, payment) |
+| app/routers/ | **13** (+ __init__) | API routers (incl. deliveries, delivery_edit, payments) |
+| app/services/ | **15** (+ __init__) | Business logic (incl. payment_service) |
+| app/exceptions/ | **12** (+ __init__, + base) | Custom exceptions (incl. delivery, delivery_edit, payment) |
+| tests/ | **11** test files + conftest | Test suite (incl. delivery + payment tests) |
+| alembic/versions/ | **11** | Database migrations (merged heads + payment tables) |
 | scripts/ | 2 | Seed + test helper |
 
 ---
@@ -139,7 +140,9 @@ alembic upgrade head
 
 ## Last Updated
 
-- Date: July 26, 2026
-- Last Sprint Completed: Sprint 4 (Core Token Book Management)
-- Test Count: 218
-- Tables: 10
+- Date: July 29, 2026
+- Last Sprint Code Completed: Sprint 6 (Payment Management)
+- Last Sprint Fully Tested: Sprint 6 (Payment Management)
+- Test Files: 11 (delivery + payments)
+- Tables: 17
+- Known Bugs: 0

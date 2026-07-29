@@ -4,18 +4,20 @@
 
 ---
 
-## Current State
+## Current State (Actual — July 29, 2026 — After Sprint 6)
 
-**Completed**: Sprints 1, 2, and 4 (Core Token Book Management)
-**Test Count**: 218 tests passing
-**Total Tables**: 10
-**Total API Endpoints**: ~40
+**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments)
+**Tested Code**: All Sprints 1–6 ✅
+**Untested Code**: None
+**Total Tables**: 17
+**Total API Endpoints**: ~78
+**Known Bugs**: 0
 
 ---
 
-## Sprint Plan
+## Sprint Plan (Actual Status)
 
-### Sprint 1: Master Data (COMPLETED)
+### Sprint 1: Master Data (COMPLETED ✅, TESTED ✅)
 - [x] User management (basic create)
 - [x] JWT Authentication (login, me, change-password)
 - [x] Route CRUD
@@ -25,7 +27,7 @@
 - [x] Role-based access control
 - [x] Seed data script
 
-### Sprint 2: Subscriptions + Delivery Exceptions (COMPLETED)
+### Sprint 2: Subscriptions + Delivery Exceptions (COMPLETED ✅, TESTED ✅)
 - [x] Subscription CRUD with joined queries
 - [x] Subscription deactivation
 - [x] Delivery Exception CRUD
@@ -33,75 +35,74 @@
 - [x] Active subscription/milk type validation
 - [x] Subscription by customer endpoint
 
-### Sprint 3: Daily Delivery Management (PLANNED)
+### Sprint 3: Daily Delivery Management (COMPLETED ✅, TESTED ✅)
 **Depends on**: Sprint 1, 2
-**Key Features**:
-- [ ] Daily delivery session (morning/evening shift)
-- [ ] Route-day assignment
-- [ ] Delivery checklist generation from active subscriptions
-- [ ] Skip/deliver marking per subscription
-- [ ] Delivery partner assignment per route per shift
-- [ ] Delivery status tracking (DELIVERED, SKIPPED, CANCELLED)
-- [ ] Integration with delivery exceptions (auto-skip)
+**Status**: All code written + tested, 68 tests. Bugs fixed.
 
-**New Tables Needed**:
-- `delivery_sessions` - Daily session per route per shift
-- `delivery_items` - Per-subscription delivery record in a session
+**What exists**:
+- [x] Daily delivery session (morning/evening shift) — `delivery_sessions` table + service
+- [x] Route-day assignment with unique constraint (route_id, delivery_date, shift)
+- [x] Delivery checklist generation from active subscriptions
+- [x] Delivery status tracking (DELIVERED, PENDING_TOKEN, CASH_SALE, NOT_DELIVERED, CANCELLED)
+- [x] Delivery partner assignment per route per shift
+- [x] Token sheet validation (sequential check, gap detection, out-of-order, old-book detection)
+- [x] Token registration workflow
+- [x] Unplanned delivery registration
+- [x] Session state machine: PLANNED -> STARTED -> COMPLETED -> CLOSED
+- [x] Session reopen (owner only) with audit trail
+- [x] Optimistic locking (version column) on deliveries
+- [x] Pagination + filtering on session list
 
-### Sprint 4 (Remaining): Token Register, Ledger, Warning Log
-**Depends on**: Sprint 3, 5
-**Key Features**:
-- [ ] Token Register - Sheet-by-sheet tracking within a book
-- [ ] Token Ledger - Complete token transaction history
-- [ ] Warning Log - Alerts for expiring books, unpaid balances
+**New Tables** (created in migration `5a6b7c8d9e0f`):
+- `delivery_sessions` — Daily session per route per shift
+- `daily_deliveries` — Per-customer delivery record in a session
+- `session_edits` — Immutable audit log for session edits
+- `token_sheet_warnings` — Warning records for non-sequential token sheets
 
-**New Tables Needed**:
-- `token_register` - Sheet-level tracking
-- `token_ledger` - Transaction log
-- `warning_logs` - Warning/alert records
+### Sprint 4: Token Book Core (COMPLETED ✅, TESTED ✅)
+- [x] Token Identities CRUD
+- [x] Token Book Issues CRUD with active book enforcement
+- [x] Token Book Payments CRUD with auto-status calculation
 
-### Sprint 5: Reconciliation (PLANNED)
+### Sprint 5: Reconciliation (COMPLETED ✅, TESTED ✅)
 **Depends on**: Sprint 3
-**Key Features**:
-- [ ] Daily reconciliation per route/shift
-- [ ] Expected vs delivered comparison
-- [ ] Cash collection tracking
-- [ ] Shortage/surplus detection
-- [ ] Reconciliation approval workflow
+**Status**: Tested via delivery test suite.
 
-**New Tables Needed**:
-- `reconciliation_sessions` - Daily reconciliation record
-- `reconciliation_items` - Per-subscription reconciliation
+**What exists**:
+- [x] Daily reconciliation calculation (loaded vs token vs cash vs returned)
+- [x] Expected vs delivered comparison
+- [x] Cash collection tracking
+- [x] Shortage/surplus detection
+- [x] Reconciliation validation (can_close check)
+- [x] Cash sale add/remove during reconciliation
+- [x] Session summary report
+- [x] Customer delivery status view
 
-### Sprint 6: Payment Management (PLANNED)
-**Depends on**: Sprint 5
-**Key Features**:
-- [ ] Customer payment ledger
-- [ ] Advance payment tracking
-- [ ] Monthly bill generation
-- [ ] Payment collection by delivery partner
-- [ ] Outstanding balance tracking
+### Sprint 6: Payment Management (COMPLETED ✅, TESTED ✅)
+**Depends on**: Sprints 1, 3
+**Status**: 33 tests, 3 new tables, 14 endpoints.
 
-### Sprint 7: Reports and Analytics (PLANNED)
-**Depends on**: All above sprints
-**Key Features**:
+- [x] Customer payment ledger (CASH, UPI, CARD, CHEQUE, BANK_TRANSFER)
+- [x] Advance payment tracking
+- [x] Monthly bill generation (from delivered qty × unit_price)
+- [x] Bill line items per milk type
+- [x] Outstanding balance tracking (billed vs paid vs balance)
+- [x] Payment collection by delivery partner (collected_by field)
+
+### Sprint 7: Reports and Analytics (NOT STARTED)
 - [ ] Route-wise daily/weekly/monthly reports
 - [ ] Customer-wise consumption reports
 - [ ] Revenue reports
 - [ ] Collection efficiency reports
 - [ ] Token book utilization reports
 
-### Sprint 8: AI Business Intelligence (PLANNED)
-**Depends on**: Sprint 7
-**Key Features**:
+### Sprint 8: AI Business Intelligence (NOT STARTED)
 - [ ] Demand forecasting
 - [ ] Customer churn prediction
 - [ ] Route optimization suggestions
 - [ ] Anomaly detection (unusual orders, payments)
 
-### Sprint 9: Frontend - React (PLANNED)
-**Depends on**: All backend
-**Key Features**:
+### Sprint 9: Frontend - React (NOT STARTED)
 - [ ] Owner dashboard
 - [ ] Customer management UI
 - [ ] Delivery partner mobile app
@@ -109,8 +110,7 @@
 - [ ] Token book tracking
 - [ ] Reports dashboard
 
-### Sprint 10: Testing and Deployment (PLANNED)
-**Key Features**:
+### Sprint 10: Testing and Deployment (NOT STARTED)
 - [ ] Comprehensive test coverage (target: 95%+)
 - [ ] API documentation finalization
 - [ ] Docker containerization
@@ -121,10 +121,23 @@
 
 ---
 
-## Immediate Next Steps
+## 🐛 Known Bugs ✅ Fixed (July 29, 2026)
 
-1. **Start Sprint 3**: Design daily delivery management tables and APIs
-2. **Address tech debt**: Move SECRET_KEY to env, fix exception hierarchy
-3. **Add API versioning**: Prefix all routes with `/api/v1`
-4. **Add CORS middleware**: Required before frontend work
-5. **Add pagination**: For all list endpoints
+### Bug 1: `Subscription.route_id` doesn't exist ✅ FIXED
+**File**: `app/services/delivery_service.py`
+**Fix**: Query now joins through Customer table (`Subscription → Customer`) and filters by `Customer.route_id`.
+
+### Bug 2: Hardcoded `user_id=1` in delivery routers ✅ FIXED
+**File**: `app/routers/delivery_edit.py`
+**Fix**: Both `edit_delivery()` and `reopen_session()` now inject `current_user: User = Depends(get_current_user)`.
+
+---
+
+## Immediate Next Steps (Priority Order)
+
+1. **🟠 HIGH**: Sprint 7 — Reports & Analytics (route-wise, revenue, collection efficiency reports)
+2. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
+3. **🟡 MEDIUM**: Add CORS middleware for frontend readiness
+4. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
+5. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
+6. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)
