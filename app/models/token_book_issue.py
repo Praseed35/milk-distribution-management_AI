@@ -26,6 +26,28 @@ class TokenBookIssue(Base):
         nullable=False
     )
 
+    customer_id = Column(
+        Integer,
+        ForeignKey("customers.id"),
+        nullable=False
+    )
+
+    milk_type_id = Column(
+        Integer,
+        ForeignKey("milk_types.id"),
+        nullable=False
+    )
+
+    book_number = Column(
+        String(50),
+        nullable=False
+    )
+
+    total_sheets = Column(
+        Integer,
+        nullable=False
+    )
+
     issue_number = Column(
         Integer,
         nullable=False
@@ -81,7 +103,27 @@ class TokenBookIssue(Base):
         back_populates="book_issues"
     )
 
+    customer = relationship(
+        "Customer",
+        back_populates="token_book_issues"
+    )
+
+    milk_type = relationship(
+        "MilkType",
+        back_populates="token_book_issues"
+    )
+
     payments = relationship(
         "TokenBookPayment",
         back_populates="token_book_issue"
+    )
+
+    deliveries = relationship(
+        "DailyDelivery",
+        back_populates="token_book_issue"
+    )
+
+    warnings = relationship(
+        "TokenSheetWarning",
+        back_populates="book_issue"
     )

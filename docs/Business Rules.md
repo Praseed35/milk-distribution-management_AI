@@ -86,10 +86,47 @@ The Token Management System follows these rules.
 * Customers may submit advance token sheets.
 * Advance token credits remain available until consumed.
 * The Checker decides whether non-sequential token sheets should be accepted.
+* **Token sheets may be returned if delivery is corrected from DELIVERED to NOT_DELIVERED.**
+* **Returned token sheets become available for reuse in future deliveries.**
+* **Token sheet return decrements the `current_sheet` count on the token book issue.**
+* **Non-sequential token sheets are allowed (system shows WARNING).**
+* **Customers may provide sheets out of order (system shows WARNING).**
+* **Multiple token books can be ACTIVE simultaneously.**
+* **New book can be used before old book is finished (system shows WARNING).**
 
 ---
 
-# 8. Delivery Rules
+# 8. Token Sheet Warning Rules
+
+The ERP includes a warning system for token sheet edge cases:
+
+### Non-sequential Sheet Warnings
+
+* When a sheet number skips ahead, system shows WARNING.
+* When a sheet is provided out of order, system shows WARNING.
+* Checker must acknowledge warning before proceeding.
+* All warnings are logged for audit purposes.
+* Checker has final decision on whether to accept.
+
+### New Book Usage Warnings
+
+* When new book is used before old book finishes, system shows WARNING.
+* Warning shows remaining sheets in old book.
+* Checker must acknowledge warning before proceeding.
+* Both books remain ACTIVE until explicitly completed.
+* System tracks which book each sheet came from.
+
+### Warning Severity Levels
+
+| Level | Description | Action Required |
+|-------|-------------|-----------------|
+| INFO | Informational only | No action needed |
+| WARNING | Requires acknowledgment | Checker must acknowledge |
+| ERROR | Cannot proceed | Registration blocked |
+
+---
+
+# 9. Delivery Rules
 
 The ERP supports the following delivery situations:
 
@@ -106,7 +143,36 @@ Unplanned deliveries are recorded separately while remaining part of daily recon
 
 ---
 
-# 9. Reconciliation Rules
+# 10. Session Editing Rules
+
+The ERP supports editing previous delivery sessions for error correction:
+
+* **Only the Owner** can reopen closed sessions and edit previous deliveries.
+* **Checker** can edit sessions that are still in `COMPLETED` status (same day, before closing).
+* **Delivery Partner** cannot edit any records.
+* All edits must include a **reason** (mandatory field).
+* All edits are **permanently logged** in the `session_edits` table.
+* Original delivery records are **never deleted** (soft update with audit trail).
+* **Token sheets can be returned** when delivery status changes from DELIVERED to NOT_DELIVERED.
+* **Token sheet return** decrements `current_sheet` on the token book issue.
+* **Returned sheets** become available for reuse in future deliveries.
+* After editing, reconciliation is **automatically recalculated**.
+* Sessions must be **re-balanced** before being closed again.
+* **Audit trail** tracks all edits including old values, new values, and reasons.
+
+### Token Sheet Return Process
+
+1. Owner reopens closed session.
+2. Owner edits delivery record: changes status from DELIVERED to NOT_DELIVERED.
+3. Owner selects "Return Token Sheet" option.
+4. System removes token registration for that delivery.
+5. System decrements `current_sheet` on token book issue by 1.
+6. Customer can now reuse that same sheet in future deliveries.
+7. Session is re-balanced and closed again.
+
+---
+
+# 11. Reconciliation Rules
 
 Every delivery route must satisfy the following equation:
 
@@ -136,10 +202,12 @@ Business Rules:
   * Returned Milk (Liters)
 * Routes remain editable until balanced.
 * Only balanced routes can be closed.
+* **After editing previous sessions, reconciliation is automatically recalculated.**
+* **Sessions must be re-balanced before being closed again.**
 
 ---
 
-# 10. Payment Rules
+# 12. Payment Rules
 
 * Token Book payment is independent of delivery.
 * Token Book payment is independent of token collection.
@@ -150,7 +218,7 @@ Business Rules:
 
 ---
 
-# 11. Reporting Rules
+# 13. Reporting Rules
 
 * Reports are generated only from recorded transactions.
 * Closed routes become historical records.
@@ -159,7 +227,7 @@ Business Rules:
 
 ---
 
-# 12. Audit Rules
+# 14. Audit Rules
 
 The ERP records every important business operation.
 
@@ -175,22 +243,31 @@ Examples include:
 * Unplanned Delivery Added
 * Route Closed
 * Route Reopened
+* **Session Edited (with old/new values)**
+* **Token Sheet Returned**
+* **Delivery Status Changed**
+* **Non-sequential Sheet Warning**
+* **New Book Usage Warning**
 
 Audit records cannot be deleted through normal business operations.
 
 ---
 
-# 13. Administrative Rules
+# 15. Administrative Rules
 
 The Owner has complete administrative control.
 
 Examples:
 
 * Reopen closed routes.
+* **Edit previous delivery sessions.**
+* **Return token sheets to customers.**
 * Issue token books.
 * Manage users.
 * Configure milk types.
 * View all reports.
+* View session edit history.
+* **View token sheet warnings.**
 
 The Checker performs daily operational work.
 
@@ -198,7 +275,7 @@ The Delivery Partner performs only physical delivery activities.
 
 ---
 
-# 14. Future Business Rules
+# 16. Future Business Rules
 
 The ERP architecture supports future business requirements such as:
 
@@ -214,6 +291,6 @@ These features can be added without changing the existing business rule framewor
 
 ---
 
-# 15. Conclusion
+# 17. Conclusion
 
 The Business Rules defined in this chapter establish the operational foundation of the Milk Distribution ERP. By separating delivery, token accounting, payments, reconciliation, and reporting into independent but connected business processes, the ERP accurately models real-world milk distribution while maintaining flexibility, consistency, and complete business traceability.

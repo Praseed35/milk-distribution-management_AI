@@ -332,7 +332,45 @@ Only the Owner can reopen a closed route.
 
 ---
 
-# 12. Business Rules
+# 12. Editing Previous Sessions
+
+The Owner can edit previous delivery sessions for error correction.
+
+### Common Scenario
+
+A customer says "no milk today" but the delivery partner forgets and delivers milk anyway. The next day, the customer complains and wants their token sheet back.
+
+### Token Sheet Return Process
+
+1. **Owner reopens** the closed session from the previous day.
+2. **Owner finds** the customer's delivery record.
+3. **Owner changes** delivery status from `DELIVERED` to `NOT_DELIVERED`.
+4. **Owner selects** "Return Token Sheet" option.
+5. **System removes** the token registration for that delivery.
+6. **System decrements** `current_sheet` on the token book issue by 1.
+7. **Customer can now reuse** that same sheet in future deliveries.
+8. **Session is re-balanced** and closed again.
+
+### Business Rules for Editing
+
+* Only the Owner can reopen closed sessions.
+* All edits must include a reason (mandatory).
+* All edits are permanently logged in the `session_edits` table.
+* Original delivery records are never deleted.
+* Reconciliation is automatically recalculated after edits.
+* Sessions must be re-balanced before being closed again.
+
+### Token Sheet Return Mechanics
+
+When a token sheet is returned:
+- The `current_sheet` count on the `token_book_issue` is decremented by 1
+- This effectively "returns" the sheet to the customer
+- The customer can use the same sheet number in future deliveries
+- The sheet becomes available for reuse
+
+---
+
+# 13. Business Rules
 
 The Delivery and Reconciliation Workflow follows these rules:
 
@@ -345,10 +383,13 @@ The Delivery and Reconciliation Workflow follows these rules:
 * Unplanned deliveries are permitted for existing customers.
 * The original delivery schedule is never modified after generation.
 * Only balanced routes may be closed.
+* **Owner can edit previous sessions for error correction.**
+* **Token sheets can be returned when delivery is corrected.**
+* **All edits are permanently logged for audit purposes.**
 
 ---
 
-# 13. Reports Generated
+# 14. Reports Generated
 
 After successful route closure, the ERP generates:
 
@@ -359,13 +400,14 @@ After successful route closure, the ERP generates:
 * Cash Sales Report
 * Returned Milk Report
 * Daily Reconciliation Report
+* **Session Edit History** (if any edits were made)
 
 These reports provide a complete operational record for the day.
 
 ---
 
-# 14. Conclusion
+# 15. Conclusion
 
 The Delivery and Reconciliation Workflow reflects the real operational practices of a milk distribution business. By separating delivery, token collection, payment, and reconciliation into independent but connected processes, the ERP minimizes manual work while ensuring complete accountability.
 
-The workflow supports pending tokens, unplanned deliveries, cash sales, customer requests, and automatic reconciliation, allowing the business to operate flexibly without losing accuracy or auditability. Every liter of dispatched milk is accounted for before a route is closed, providing a reliable foundation for token accounting, financial management, and business reporting.
+The workflow supports pending tokens, unplanned deliveries, cash sales, customer requests, automatic reconciliation, and **editing previous sessions with token sheet returns**, allowing the business to operate flexibly without losing accuracy or auditability. Every liter of dispatched milk is accounted for before a route is closed, providing a reliable foundation for token accounting, financial management, and business reporting.

@@ -1,6 +1,6 @@
-# Milk Management AI
+# Milk Distribution ERP
 
-A FastAPI-based backend system for managing milk distribution operations.
+Full-stack ERP for milk distribution with a FastAPI backend and React frontend.
 
 ## Features
 
@@ -14,6 +14,7 @@ A FastAPI-based backend system for managing milk distribution operations.
 
 ## Tech Stack
 
+### Backend
 - **Framework**: FastAPI
 - **ORM**: SQLAlchemy 2.0
 - **Database**: PostgreSQL
@@ -22,10 +23,19 @@ A FastAPI-based backend system for managing milk distribution operations.
 - **Password Hashing**: bcrypt (passlib)
 - **Validation**: Pydantic v2
 
+### Frontend (`frontend/`)
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite 5
+- **Styling**: Tailwind CSS v4
+- **Routing**: React Router v7
+- **Data Fetching**: TanStack Query v5 + Axios
+- **Notifications**: react-hot-toast
+- **Error Tracking**: Sentry (optional)
+
 ## Project Structure
 
 ```
-app/
+app/                # FastAPI backend
 ├── core/           # Security, auth, config, roles
 ├── constants/      # Enum definitions (roles, shifts, statuses)
 ├── models/         # SQLAlchemy ORM models
@@ -36,31 +46,37 @@ app/
 ├── database.py     # Engine, SessionLocal, Base
 ├── dependencies.py # get_db(), oauth2_scheme
 └── main.py         # FastAPI app creation + router registration
+
+frontend/           # React SPA
+└── src/
+    ├── api/        # Axios API functions per module
+    ├── components/ # Reusable UI, layout, guards
+    ├── hooks/      # TanStack Query hooks per module
+    ├── pages/      # Page components grouped by module
+    ├── providers/  # AuthProvider, QueryProvider
+    ├── types/      # TypeScript interfaces
+    └── lib/        # Utility functions
 ```
 
 ## Setup
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Backend
 
-2. Configure database in `alembic.ini` or set environment variables
+```bash
+pip install -r requirements.txt
+# Configure database in alembic.ini
+alembic upgrade head
+python scripts/seed.py
+uvicorn app.main:app --reload --port 8000
+```
 
-3. Run migrations:
-   ```bash
-   alembic upgrade head
-   ```
+### Frontend
 
-4. Seed the database:
-   ```bash
-   python scripts/seed.py
-   ```
-
-5. Start the server:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173
+```
 
 ## API Endpoints
 
@@ -118,9 +134,23 @@ pytest
 
 ## Default Users (after seeding)
 
-| Username | Role |
-|----------|------|
-| owner | OWNER |
-| checker1 | CHECKER |
-| delivery1 | DELIVERY_PARTNER |
-| admin | OWNER |
+| Username | Password | Role |
+|----------|----------|------|
+| owner | owner123 | OWNER |
+| checker1 | checker123 | CHECKER |
+| delivery1 | delivery123 | DELIVERY_PARTNER |
+| admin | admin123 | OWNER |
+| employee1 | emp123 | EMPLOYEE |
+
+## Frontend Status (Sprint 9)
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Setup, Auth, Layout | ✅ Complete |
+| 2 | Master Data CRUD (Routes, Customers, Milk Types, Employees, Users) | ✅ Complete |
+| 3 | Subscriptions & Exceptions | ⏳ Pending |
+| 4 | Token Books | ⏳ Pending |
+| 5 | Delivery Sessions | ⏳ Pending |
+| 6 | Payments | ⏳ Pending |
+| 7 | Reports | ⏳ Pending |
+| 8 | Testing | ⏳ Pending |

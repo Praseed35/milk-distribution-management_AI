@@ -1,0 +1,15 @@
+# Speckit Extensions Configuration
+# This file defines hooks that run before/after speckit commands
+
+hooks:
+  # Hooks that run before tasks generation
+  before_tasks: []
+
+  # Hooks that run after tasks generation
+  after_tasks: []
+
+  # Hooks that run before analysis
+  before_analyze: []
+
+  # Hooks that run after analysis
+  after_analyze: []

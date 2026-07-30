@@ -2,7 +2,7 @@
 
 ---
 
-> **Note:** This document describes the complete development roadmap. As of July 2026, Sprint 1 and Sprint 2 are complete, Sprint 4 and 5 are in progress, and Sprints 3, 6-10 are not started. See the Current Sprint Progress section for details.
+> **Note:** This document describes the complete development roadmap. As of July 2026, Sprint 1 and Sprint 2 are complete, Sprint 4 and 5 are in progress, Sprint 9 (Frontend) is in progress (Phases 1-2 complete), and Sprints 3, 6-8, 10 are not started. See the Current Sprint Progress section for details.
 
 ---
 
@@ -586,9 +586,16 @@ Each milestone represents a measurable project achievement.
 * Delivery Analysis ❌
 * Demand Forecasting ❌
 
-## Sprint 9 – Frontend Development ❌ Not Started
+## Sprint 9 – Frontend Development 🔄 In Progress
 
-* React Frontend ❌
+* React Frontend (Phase 1: Setup + Auth + Layout ✅)
+* React Frontend (Phase 2: Master Data CRUD ✅)
+* React Frontend (Phase 3: Subscriptions & Exceptions ⏳)
+* React Frontend (Phase 4: Token Books ⏳)
+* React Frontend (Phase 5: Delivery Sessions ⏳)
+* React Frontend (Phase 6: Payments ⏳)
+* React Frontend (Phase 7: Reports ⏳)
+* React Frontend (Phase 8: Testing ⏳)
 
 ## Sprint 10 – Testing and Deployment ❌ Not Started
 

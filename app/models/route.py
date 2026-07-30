@@ -63,3 +63,8 @@ class Route(Base):
         "Employee",
         back_populates="route"
     )
+
+    delivery_sessions = relationship(
+        "DeliverySession",
+        back_populates="route"
+    )

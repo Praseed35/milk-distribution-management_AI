@@ -1,6 +1,9 @@
 # app/main.py
 
-from fastapi import FastAPI
+from datetime import datetime
+
+from fastapi import FastAPI, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine
 from app.models.user import User
@@ -24,11 +27,43 @@ from app.routers.payments import router as payment_router
 from app.routers.reports import router as reports_router
 
 
-
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+api_v1 = APIRouter(prefix="/api/v1")
 
+api_v1.include_router(user_router)
+api_v1.include_router(auth_router)
+api_v1.include_router(route_router)
+api_v1.include_router(customer_router)
+api_v1.include_router(milk_type_router)
+api_v1.include_router(subscription_router)
+api_v1.include_router(employee_router)
+api_v1.include_router(delivery_exception_router)
+api_v1.include_router(token_book_router)
+api_v1.include_router(deliveries_router)
+api_v1.include_router(delivery_edit_router)
+api_v1.include_router(payment_router)
+api_v1.include_router(reports_router)
+
+app.include_router(api_v1)
+
+@api_v1.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "version": "1.0.0",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+# Legacy root-level routes (deprecated — kept for backward compatibility)
 app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(route_router)

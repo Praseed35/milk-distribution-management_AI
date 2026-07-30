@@ -85,6 +85,11 @@ class Employee(Base):
         "User"
     )
 
+    delivery_sessions = relationship(
+        "DeliverySession",
+        back_populates="delivery_partner"
+    )
+
     @property
     def username(self):
         return self.user.username if self.user else None
