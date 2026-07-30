@@ -4,6 +4,20 @@
 
 ---
 
+## 🔴 Critical Bugs ✅ Fixed
+
+### B1. `Subscription.route_id` doesn't exist (will crash) ✅ FIXED
+**File**: `app/services/delivery_service.py`
+**Fix**: Now joins through `Customer` table (`Subscription.customer_id → Customer.id`) and filters by `Customer.route_id`.
+**Date**: July 29, 2026
+
+### B2. Hardcoded `user_id=1` in delivery routers ✅ FIXED
+**File**: `app/routers/delivery_edit.py`
+**Fix**: Both `edit_delivery()` and `reopen_session()` now inject `current_user: User = Depends(get_current_user)` and use `current_user.id`.
+**Date**: July 29, 2026
+
+---
+
 ## High Priority
 
 ### 1. Hardcoded Secret Key
@@ -13,96 +27,96 @@ SECRET_KEY = "milk_management_secret_key_2026"
 ```
 Should use environment variable. Security risk in production.
 
-### 2. Database Name Typo
+### 2. No Delivery Session Tests ✅ RESOLVED
+Now has 24 tests across session lifecycle, registration, reconciliation, and edit. 343 tests total across all 12 test files.
+
+### 3. Database Name Typo
 Database is `milk_managemen_ai` (missing 't' in management). Consistent everywhere but confusing.
 
-### 3. No CORS Configuration
-No CORS middleware configured. Required before frontend integration (Sprint 9).
+### 4. No CORS Configuration
+No CORS middleware configured. Required before frontend integration.
 
-### 4. Inconsistent Exception Hierarchy
+### 5. Inconsistent Exception Hierarchy
 `BusinessException` base class exists in `exceptions/base.py` but many exceptions extend `Exception` directly:
-- `route.py`: Extend `BusinessException` ✓
-- `milk_type.py`: Extend `BusinessException` ✓
-- `user.py`: Extend `Exception` directly
-- `customer.py`: Extend `Exception` directly
-- `employee.py`: Extend `Exception` directly
-- `subscription.py`: Extend `Exception` directly
-- `delivery_exception.py`: Extend `Exception` directly
-- `token_book.py`: Extend `Exception` directly
+- Extend `BusinessException` ✓: `route.py`, `milk_type.py`, **`delivery.py`**, **`delivery_edit.py`** (newer code is correct)
+- Extend `Exception` directly ❌: `user.py`, `customer.py`, `employee.py`, `subscription.py`, `delivery_exception.py`, `token_book.py`
 
 ---
 
 ## Medium Priority
 
-### 5. Constants Not Enforced
+### 6. Constants Not Enforced
 Status/role enums defined in `constants/` are not used in models or schemas:
 - `UserRole` enum not used - roles stored as plain strings
 - `Shift` enum imported in subscription schema but not used as constraint
-- `SessionStatus`, `TokenStatus`, `DeliveryStatus` defined but never referenced
-- `BookIssueStatus`, `PaymentStatus`, `PaymentMode` defined but not enforced
+- `SessionStatus`, `TokenStatus`, `DeliveryStatus`, `DeliverySource`, `WarningCode`, `ReconciliationStatus` defined but not enforced at model/schema level
 
-### 6. Users Router Missing CRUD
-`/users` only has GET (list) and POST (create). No update or delete endpoints.
+### 7. Users Router Missing CRUD
+`/users` only has GET (list) and POST (create). No update or delete endpoints. `users` table also lacks `created_at`/`updated_at` timestamps.
 
-### 7. No Pagination
-All list endpoints return every active record. Will cause performance issues with large datasets.
+### 8. No Pagination on Original Endpoints
+Only `delivery_service.list_sessions()` has pagination (skip/limit). All other list endpoints return every active record.
 
-### 8. No Filtering/Search
-List endpoints have no query parameters. Can't filter by status, route, date range, etc.
+### 9. No Filtering/Search on Original Endpoints
+Only delivery session list has query parameter filters (route_id, delivery_date, shift, status). Original endpoints have no filtering.
 
-### 9. Hardcoded Values in Services
+### 10. Hardcoded Values in Services
 - Customer code generation: `f"C{next_number:05d}"` - hardcoded format
 - Employee code generation: `f"E{next_number:05d}"` - hardcoded format
 - Default statuses: "ACTIVE", "WAITING", "PENDING" hardcoded in service code
 
-### 10. Empty Directories
+### 11. Empty Directories
 `app/common/` and `app/utils/` exist but contain no code. Should be removed or utilized.
 
 ---
 
 ## Low Priority
 
-### 11. Service Return Type Inconsistency
+### 12. Service Return Type Inconsistency
 Some services return SQLAlchemy model objects, others return dicts. Mixed patterns:
 - Routes, MilkTypes, Customers: Return model objects
 - Subscriptions, DeliveryExceptions, TokenBooks: Return manually constructed dicts
+- Delivery services: Mix of model objects (create_session returns DeliverySession) and dicts (register_token returns dict)
 
-### 12. No Request ID / Logging
+### 13. No Request ID / Logging
 No structured logging or request ID tracking for debugging.
 
-### 13. No Rate Limiting
+### 14. No Rate Limiting
 No rate limiting on any endpoint.
 
-### 14. Test DB Name Matching
-Test DB URL hardcoded to same production DB. No separate test database.
+### 15. Test DB Uses Production Database
+Test DB URL defaults to same production PostgreSQL (`milk_managemen_ai`). No separate test database. While transaction rollback provides isolation, schema changes during test runs may affect production data.
 
-### 15. User Service Uses Different Pattern
-`user_service.create()` returns `None` on duplicate instead of raising exception (inconsistent with other services).
+### 16. User Service Uses Different Pattern
+`user_service.create()` returns `None` on duplicate instead of raising exception (inconsistent with all other services).
 
-### 16. User Model Missing Timestamps
+### 17. User Model Missing Timestamps
 The `users` table doesn't have `created_at`/`updated_at` columns unlike all other tables.
+
+### 18. Empty Migration
+**File**: `alembic/versions/1154a3a25414_remove_is_active_in_update_customer_.py`
+Empty migration — `upgrade()` and `downgrade()` do nothing. Either implement the intended logic or remove/replace.
 
 ---
 
 ## Architecture Improvements Needed
 
-### For Sprint 3+ (Daily Delivery Management)
-- Need a proper delivery session/daily log table
-- Need shift-based delivery tracking
-- Need route-day assignment capability
+### Completed (Already Implemented)
+- ✅ Delivery session/daily log table (`delivery_sessions`, `daily_deliveries`)
+- ✅ Shift-based delivery tracking (`shift` column on session + delivery)
+- ✅ Route-day assignment capability (unique constraint on route_id+date+shift)
+- ✅ Daily totals aggregation (`total_milk_loaded`, `total_token_registered`, etc. on session)
+- ✅ Cash collection tracking (`total_cash_sales` on session, `cash_amount` on delivery)
+- ✅ Discrepancy detection (reconciliation difference calculation)
+- ✅ Immutable audit trail (`session_edits` table with JSONB snapshots)
+- ✅ Optimistic locking (version column on session + delivery)
+- ✅ Pagination + filtering on delivery session list
 
-### For Sprint 5+ (Reconciliation)
-- Need daily totals aggregation
-- Need cash collection tracking
-- Need discrepancy detection
-
-### For Sprint 6+ (Payment Management)
-- Need comprehensive payment ledger
-- Need advance payment tracking
-- Need bill generation
-
-### For Sprint 9+ (Frontend)
+### Still Needed
 - API versioning (`/api/v1/`)
 - CORS middleware
 - OpenAPI customization (title, description, version)
 - Request/response logging middleware
+- Comprehensive payment ledger
+- Advance payment tracking
+- Bill generation

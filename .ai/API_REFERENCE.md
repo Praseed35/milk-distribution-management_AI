@@ -778,6 +778,510 @@ Soft-delete payment.
 
 ---
 
+## Delivery Sessions
+
+### POST `/deliveries/sessions/`
+
+Create a new delivery session.
+
+**Request Body**:
+```json
+{
+    "route_id": "integer",
+    "delivery_date": "date (YYYY-MM-DD)",
+    "shift": "string (MORNING|EVENING)",
+    "delivery_partner_id": "integer"
+}
+```
+
+**Response 201**: Created DeliverySession with status=PLANNED
+
+**Errors**: 404 (route/employee not found), 400 (duplicate session)
+
+---
+
+### GET `/deliveries/sessions/`
+
+List delivery sessions with optional filters and pagination.
+
+**Query Parameters**:
+- `route_id` (int, optional): Filter by route
+- `delivery_date` (date, optional): Filter by date
+- `shift` (str, optional): MORNING or EVENING
+- `status` (str, optional): PLANNED/STARTED/COMPLETED/CLOSED
+- `skip` (int, default 0): Pagination offset
+- `limit` (int, default 100, max 1000): Pagination limit
+
+**Response 200**: `{sessions: [...], total: int}`
+
+---
+
+### GET `/deliveries/sessions/{session_id}`
+
+Get session detail with deliveries list.
+
+**Response 200**: DeliverySession with nested deliveries array
+**Response 404**: Session not found
+
+---
+
+### POST `/deliveries/sessions/{session_id}/start`
+
+Start a session (alias for dispatch). Sets status to STARTED.
+
+**Request Body**: Same as `/dispatch`
+
+---
+
+### POST `/deliveries/sessions/{session_id}/dispatch`
+
+Record milk dispatch. Sets total_milk_loaded and changes status to STARTED.
+
+**Request Body**:
+```json
+{
+    "total_milk_loaded": "decimal (> 0)"
+}
+```
+
+**Response 200**: Updated DeliverySession (status=STARTED)
+
+**Errors**:
+- 404: Session not found
+- 400: Session not in PLANNED status, or dispatch already recorded
+
+---
+
+### POST `/deliveries/sessions/{session_id}/close`
+
+Close a session. Requires balanced reconciliation.
+
+**Response 200**: Updated DeliverySession (status=CLOSED, reconciliation_status=BALANCED)
+
+**Errors**:
+- 404: Session not found
+- 400: Session not in COMPLETED status, already closed, or not balanced
+
+---
+
+### GET `/deliveries/sessions/{session_id}/checklist`
+
+Get delivery checklist for a session.
+
+**Response 200**:
+```json
+{
+    "session_id": 1,
+    "route_name": "Downtown Route",
+    "delivery_date": "2026-07-29",
+    "shift": "MORNING",
+    "total_expected": 5,
+    "customers": [
+        {
+            "customer_id": 1,
+            "customer_name": "Rajesh Kumar",
+            "address": "12 MG Road",
+            "phone": "9876543210",
+            "milk_type": "Full Cream Milk",
+            "quantity": 2
+        }
+    ]
+}
+```
+
+**Response 404**: Session not found
+
+---
+
+### GET `/deliveries/sessions/{session_id}/reconciliation`
+
+Calculate reconciliation for a session.
+
+**Response 200**:
+```json
+{
+    "session_id": 1,
+    "loaded_milk": 50.0,
+    "token_registered": 40.0,
+    "cash_sales": 8.0,
+    "returned_milk": 2.0,
+    "total_accounted": 50.0,
+    "difference": 0.0,
+    "is_balanced": true,
+    "status": "BALANCED"
+}
+```
+
+---
+
+### GET `/deliveries/sessions/{session_id}/reconciliation/summary`
+
+Get session summary data.
+
+---
+
+### GET `/deliveries/sessions/{session_id}/reconciliation/customers`
+
+Get per-customer delivery status for a session.
+
+---
+
+### POST `/deliveries/sessions/{session_id}/reconciliation/validate`
+
+Validate if a session can be closed. Returns issues list.
+
+---
+
+### POST `/deliveries/sessions/{session_id}/reconciliation/submit`
+
+Submit reconciliation with cash collected, returns, and token sheets.
+
+**Parameters**: total_cash_collected, cash_sales[], returned_milk, returned_reasons[], token_sheets_collected[], remarks
+
+---
+
+### POST `/deliveries/sessions/{session_id}/reconciliation/cash-sales`
+
+Add a cash sale during reconciliation.
+
+**Query Parameters**: customer_name, customer_phone, milk_type_id, quantity, amount, payment_method
+
+---
+
+### DELETE `/deliveries/sessions/{session_id}/reconciliation/cash-sales/{cash_sale_id}`
+
+Remove a cash sale.
+
+---
+
+### GET `/deliveries/sessions/{session_id}/report`
+
+Get session report with summary and milk summary.
+
+**Response 200**:
+```json
+{
+    "session_id": 1,
+    "route_name": "Downtown Route",
+    "delivery_date": "2026-07-29",
+    "shift": "MORNING",
+    "summary": {
+        "total_customers": 5,
+        "delivered": 3,
+        "pending_token": 1,
+        "cash_sale": 1,
+        "not_delivered": 0
+    },
+    "milk_summary": {
+        "loaded": 50.0,
+        "token_registered": 40.0,
+        "cash_sales": 10.0,
+        "returned": 0.0
+    }
+}
+```
+
+---
+
+## Deliveries
+
+### PUT `/deliveries/{delivery_id}`
+
+Update a delivery's status, quantity, token sheet, or cash amount. Uses optimistic locking.
+
+**Request Body** (all fields optional):
+```json
+{
+    "delivery_status": "DELIVERED|PENDING_TOKEN|CASH_SALE|NOT_DELIVERED|CANCELLED|null",
+    "delivered_quantity": "int|null (>= 0)",
+    "token_sheet_number": "int|null",
+    "cash_amount": "decimal|null",
+    "remarks": "string|null (max 500 chars)",
+    "version": "int|null"
+}
+```
+
+**Response 200**: Updated DailyDelivery
+
+**Errors**: 404 (delivery not found), 400 (invalid token sheet), **409 (concurrent edit)**
+
+---
+
+### POST `/deliveries/unplanned`
+
+Register an unplanned delivery.
+
+**Request Body**:
+```json
+{
+    "session_id": "integer",
+    "customer_id": "integer",
+    "milk_type_id": "integer",
+    "delivered_quantity": "integer (>= 0)",
+    "delivery_status": "DELIVERED|PENDING_TOKEN|CASH_SALE",
+    "registration_method": "TOKEN_SHEET|CASH|PENDING",
+    "token_sheet_number": "int|null",
+    "reason": "string (1-500 chars)"
+}
+```
+
+**Response 201**: Created DailyDelivery
+
+**Errors**: 404 (session/customer/milk_type), 400 (invalid token sheet)
+
+---
+
+### POST `/deliveries/{delivery_id}/register-token`
+
+Register a token sheet for a delivery.
+
+**Request Body**:
+```json
+{
+    "token_sheet_number": "int (> 0)",
+    "acknowledged_warnings": ["string list of warning codes"],
+    "acknowledgment_reason": "string|null (max 500 chars)"
+}
+```
+
+**Response 200**:
+```json
+{
+    "delivery_id": 1,
+    "sheet_registered": true,
+    "token_book_issue_id": 1,
+    "new_current_sheet": 3,
+    "warnings_logged": 0,
+    "message": "Token Sheet #2 registered successfully."
+}
+```
+
+**Errors**: 404, 400 (invalid sheet, already used)
+
+---
+
+### POST `/deliveries/validate-token`
+
+Validate a token sheet before registration.
+
+**Request Body**:
+```json
+{
+    "customer_id": "integer",
+    "milk_type_id": "integer",
+    "sheet_number": "int (> 0)",
+    "token_book_issue_id": "int|null"
+}
+```
+
+**Response 200**:
+```json
+{
+    "is_valid": true,
+    "warnings": [],
+    "can_proceed": true,
+    "requires_acknowledgment": false
+}
+```
+
+---
+
+### GET `/deliveries/customer/{customer_id}/token-status`
+
+Get customer's token book status.
+
+**Response 200**: CustomerTokenStatusResponse with list of token books, old book remaining info.
+
+---
+
+### PUT `/deliveries/{delivery_id}/edit`
+
+Edit a delivery (owner only, requires reopened session).
+
+**Request Body**:
+```json
+{
+    "delivery_status": "DELIVERED|...|null",
+    "return_token_sheet": false,
+    "reason": "string (1-500 chars)",
+    "version": "int|null"
+}
+```
+
+**Response 200**: `{delivery_id, old_status, new_status, token_sheet_returned, ...}`
+
+**Errors**: 404, 409 (concurrent edit), 400 (invalid)
+
+---
+
+### GET `/deliveries/{delivery_id}/warnings`
+
+Get warnings for a delivery.
+
+---
+
+### GET `/deliveries/session/{session_id}`
+
+Get all deliveries for a session (filterable by status).
+
+**Query Parameters**: status (optional), skip (default 0), limit (default 100)
+
+---
+
+### POST `/deliveries/session/{session_id}/reopen`
+
+Reopen a closed session (owner only).
+
+**Request Body**:
+```json
+{
+    "reason": "string (1-500 chars)"
+}
+```
+
+**Response 200**: Updated DeliverySession (status=COMPLETED)
+
+**Errors**: 404, 400 (session not closed)
+
+---
+
+### GET `/deliveries/session/{session_id}/edit-history`
+
+Get full edit history for a session.
+
+**Response 200**: List of edit records with old/new values, edited_by, reason, timestamp.
+
+---
+
+## Reports
+
+All report endpoints require authentication. Date filtering supports preset strings (`today`, `yesterday`, `this_week`, `last_week`, `this_month`, `last_month`, `this_year`) or explicit `from_date`/`to_date`. All list endpoints accept `?format=csv` for CSV export and `?refresh=true` to bypass cache.
+
+### GET `/reports/route-delivery`
+
+Delivery performance per route — loaded vs delivered vs cash collected vs returned vs shortage.
+
+**Roles**: OWNER, ADMIN, CHECKER, DELIVERY_PARTNER (own route only)
+
+**Query Parameters**: route_id, preset, from_date, to_date, shift (MORNING/EVENING), group_by (route/day/week/month), format, page, page_size
+
+**Response 200 (JSON)**:
+```json
+{
+  "data": [{
+    "route_id": 1, "route_name": "Route A", "route_code": "R001",
+    "session_count": 30, "delivery_count": 450,
+    "total_loaded_quantity": 900.0, "total_delivered_quantity": 885.0,
+    "total_cash_collected": 500.0, "total_token_registered": 800.0,
+    "total_returned_quantity": 10.0, "shortage_surplus": 5.0,
+    "is_balanced": false
+  }],
+  "total": 1, "page": 1, "page_size": 50, "generated_at": "2026-07-30T10:30:00"
+}
+```
+
+**Errors**: 401, 403 (DELIVERY_PARTNER wrong route)
+
+---
+
+### GET `/reports/revenue`
+
+Revenue breakdown by source (token book payments vs customer bill payments), with optional grouping by payment mode, route, or milk type.
+
+**Roles**: OWNER only
+
+**Query Parameters**: preset, from_date, to_date, route_id, milk_type_id, payment_mode, group_by (source/payment_mode/route/milk_type), format, page, page_size
+
+**Response 200 (JSON)**:
+```json
+{
+  "date_from": "2026-07-01", "date_to": "2026-07-30",
+  "total_revenue": 8000.0, "token_book_revenue": 5000.0,
+  "customer_bill_revenue": 3000.0,
+  "by_source": [{"source": "token_book_payments", "amount": 5000.0, "percentage": 62.5}, ...],
+  "by_payment_mode": [...], "by_route": [...], "by_milk_type": [...]
+}
+```
+
+**Errors**: 401, 403
+
+---
+
+### GET `/reports/collection-efficiency`
+
+Billed vs paid vs outstanding per customer with aging buckets (0-30, 31-60, 61-90, 90+).
+
+**Roles**: OWNER, ADMIN
+
+**Query Parameters**: preset, from_date, to_date, route_id, min_outstanding, format, page, page_size
+
+**Response 200 (JSON)**: Array of customer items with total_billed, total_paid, balance, collection_percentage, aging breakdown.
+
+**Errors**: 401, 403
+
+---
+
+### GET `/reports/customer/{customer_id}/consumption`
+
+Customer consumption history with trend detection (increasing/declining/stable).
+
+**Roles**: OWNER, ADMIN, CHECKER
+
+**Path Parameters**: customer_id
+
+**Query Parameters**: preset, from_date, to_date, group_by (day/week/month), format, page, page_size
+
+**Response 200 (JSON)**:
+```json
+{
+  "customer_id": 1, "customer_name": "Customer A",
+  "date_from": "2026-07-01", "date_to": "2026-07-30",
+  "total_consumption": 60.0, "average_daily": 2.0, "days_with_data": 30,
+  "trend": {"period": "stable", "recent_7day_avg": 2.0, "preceding_21day_avg": 1.9, "change_percentage": 5.26},
+  "items": [{"date": "2026-07-01", "total_quantity": 2.0, "by_milk_type": [{"milk_type": "Full Cream", "quantity": 2.0}]}]
+}
+```
+
+**Errors**: 401, 404
+
+---
+
+### GET `/reports/token-utilization`
+
+Token book usage — sheets used, remaining, utilization %, and books nearing replacement.
+
+**Roles**: OWNER, ADMIN
+
+**Query Parameters**: route_id, customer_id, low_threshold (default 20, 1-100), format, page, page_size
+
+**Response 200 (JSON)**: Array of token items with total_sheets_used, total_sheets_remaining, utilization_percentage, books_below_20_percent.
+
+**Errors**: 401, 403
+
+---
+
+### GET `/reports/dashboard`
+
+Single-page operational overview for today — session counts, delivery statuses, flagged issues.
+
+**Roles**: OWNER, ADMIN, CHECKER, DELIVERY_PARTNER (own route)
+
+**Query Parameters**: none (always today), refresh
+
+**Response 200 (JSON)**:
+```json
+{
+  "report_date": "2026-07-30", "total_sessions": 3, "total_milk_loaded": 30.0,
+  "total_milk_delivered": 28.0, "total_cash_collected": 5.0,
+  "deliveries_by_status": {"DELIVERED": 15, "PENDING_TOKEN": 2, "CASH_SALE": 3, "NOT_DELIVERED": 0, "CANCELLED": 0},
+  "pending_token_count": 2, "unclosed_sessions": 1, "unbalanced_sessions": 0, "completed_not_closed": 0
+}
+```
+
+**Errors**: 401
+
+---
+
 ## Common Response Codes
 
 | Code | Meaning |
@@ -788,6 +1292,7 @@ Soft-delete payment.
 | 401 | Authentication required or failed |
 | 403 | Insufficient permissions |
 | 404 | Resource not found |
+| 409 | Conflict (concurrent edit detected via optimistic locking) |
 | 422 | Request validation error (missing/invalid fields) |
 
 ---

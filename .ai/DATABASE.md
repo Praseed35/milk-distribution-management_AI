@@ -1,6 +1,6 @@
 # DATABASE.md - Complete Database Schema
 
-> All 10 tables with columns, constraints, relationships, and migration history.
+> All 14 tables with columns, constraints, relationships, and migration history.
 
 ---
 
@@ -19,26 +19,55 @@ URL: postgresql://postgres:admin@localhost:5432/milk_managemen_ai
 ## Entity Relationship Diagram
 
 ```
-users ─────────────┐
-                    │
-routes ────────┐   │
-    │          │   │
-    │     customers
-    │          │   │
-    │          ├───┼── employees.user_id
-    │          │   │
-    │     subscriptions
-    │          │
-    │     delivery_exceptions
-    │
-    ├─── token_identities
-    │         │
-    │    token_book_issues
-    │         │
-    │    token_book_payments
-    │              └── token_book_payments.collected_by -> users.id
-    │
-    └─── employees.route_id
+User ──────────────────────────────────────────────────────┐
+  │                                                        │
+  ├──< Employee (user_id)                                 │
+  ├──< TokenBookPayment (collected_by)                    │
+  ├──< DeliverySession (reopened_by)                      │
+  ├──< DailyDelivery (added_by, last_edited_by)           │
+  └──< SessionEdit (edited_by)                            │
+                                                           │
+Route ─────────────────────────────────────────────────────┤
+  │                                                        │
+  ├──< Customer (route_id)                                 │
+  │     │                                                  │
+  │     ├──< Subscription (customer_id)                    │
+  │     │     │                                            │
+  │     │     ├──< DeliveryException (subscription_id)     │
+  │     │     └──> MilkType (milk_type_id)                 │
+  │     │                                                  │
+  │     ├──< TokenIdentity (customer_id)                   │
+  │     │     └──> MilkType (milk_type_id)                 │
+  │     │                                                  │
+  │     ├──< TokenBookIssue (customer_id)                  │
+  │     │     └──> MilkType (milk_type_id)                 │
+  │     │                                                  │
+  │     └──< DailyDelivery (customer_id)                   │
+  │           └──> MilkType (milk_type_id)                 │
+  │                                                        │
+  ├──< Employee (route_id)                                 │
+  ├──< DeliverySession (route_id)                          │
+  │     │                                                  │
+  │     ├──< DailyDelivery (session_id)                    │
+  │     │     │                                            │
+  │     │     ├──< TokenSheetWarning (delivery_id)         │
+  │     │     │     └──> TokenBookIssue (book_issue_id)    │
+  │     │     └──< SessionEdit (delivery_id)               │
+  │     │                                                  │
+  │     └──< SessionEdit (session_id)                      │
+  │                                                        │
+  └──< DeliverySession (delivery_partner_id -> employees)  │
+                                                           │
+TokenIdentity ───< TokenBookIssue (token_identity_id)      │
+                      │                                    │
+                      ├──< TokenBookPayment                │
+                      │     (token_book_issue_id)          │
+                      │                                    │
+                      ├──< DailyDelivery                   │
+                      │     (token_book_issue_id)          │
+                      │                                    │
+                      └──< TokenSheetWarning               │
+                            (book_issue_id)                │
 ```
 
 ---
@@ -226,7 +255,11 @@ routes ────────┐   │
 |--------|------|-------------|-------|
 | id | INTEGER | PRIMARY KEY, INDEX | Auto-increment |
 | token_identity_id | INTEGER | FK -> token_identities.id, NOT NULL | |
+| customer_id | INTEGER | FK -> customers.id, NOT NULL | Denormalized for query performance |
+| milk_type_id | INTEGER | FK -> milk_types.id, NOT NULL | Denormalized for query performance |
 | issue_number | INTEGER | NOT NULL | Sequential book number |
+| book_number | VARCHAR(50) | NOT NULL | Human-readable book number |
+| total_sheets | INTEGER | NOT NULL | Total sheets in this book |
 | issue_date | TIMESTAMPTZ | SERVER DEFAULT now(), NOT NULL | |
 | completion_date | TIMESTAMPTZ | NULLABLE | Set when all sheets used |
 | current_sheet | INTEGER | NOT NULL, DEFAULT 0 | Current sheet counter |
@@ -236,8 +269,8 @@ routes ────────┐   │
 | created_at | TIMESTAMPTZ | SERVER DEFAULT now() | |
 | updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate now() | |
 
-**Foreign keys**: token_identity_id -> token_identities.id
-**Relationships**: Belongs to TokenIdentity, has many TokenBookPayments
+**Foreign keys**: token_identity_id -> token_identities.id, customer_id -> customers.id, milk_type_id -> milk_types.id
+**Relationships**: Belongs to TokenIdentity/Customer/MilkType; has many TokenBookPayments, DailyDeliveries, TokenSheetWarnings
 
 **Business rules**:
 - Only one ACTIVE book per token identity at a time
@@ -275,6 +308,120 @@ routes ────────┐   │
 
 ---
 
+---
+ 
+## Table: delivery_sessions
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | INTEGER | PRIMARY KEY, INDEX | Auto-increment |
+| route_id | INTEGER | FK -> routes.id, NOT NULL | |
+| delivery_date | DATE | NOT NULL | |
+| shift | VARCHAR(10) | NOT NULL | MORNING/EVENING |
+| delivery_partner_id | INTEGER | FK -> employees.id, NOT NULL | |
+| status | VARCHAR(20) | NOT NULL, DEFAULT 'PLANNED' | PLANNED/STARTED/COMPLETED/CLOSED |
+| total_milk_loaded | NUMERIC(10,2) | DEFAULT 0 | Liters loaded for dispatch |
+| total_token_registered | NUMERIC(10,2) | DEFAULT 0 | Auto-calculated from deliveries |
+| total_cash_sales | NUMERIC(10,2) | DEFAULT 0 | |
+| total_returned_milk | NUMERIC(10,2) | DEFAULT 0 | |
+| reconciliation_status | VARCHAR(20) | DEFAULT 'PENDING' | PENDING/BALANCED/UNBALANCED |
+| reopened_by | INTEGER | FK -> users.id, NULLABLE | Owner who reopened |
+| reopened_at | TIMESTAMPTZ | NULLABLE | |
+| reopen_count | INTEGER | DEFAULT 0 | Number of times reopened |
+| version | INTEGER | NOT NULL, DEFAULT 1 | Optimistic locking |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE | Soft delete |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() | |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate now() | |
+
+**Unique constraints**: (route_id, delivery_date, shift) — only one session per route/date/shift
+**Foreign keys**: route_id -> routes.id, delivery_partner_id -> employees.id, reopened_by -> users.id
+**Relationships**: Has many DailyDeliveries, has many SessionEdits
+
+**State machine**: PLANNED -> STARTED -> COMPLETED -> CLOSED <-> COMPLETED (reopen)
+**Optimistic locking**: `version` column incremented on each write; concurrent writes checked
+
+---
+
+## Table: daily_deliveries
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | INTEGER | PRIMARY KEY, INDEX | Auto-increment |
+| session_id | INTEGER | FK -> delivery_sessions.id, NOT NULL | |
+| customer_id | INTEGER | FK -> customers.id, NOT NULL | |
+| milk_type_id | INTEGER | FK -> milk_types.id, NOT NULL | |
+| planned_quantity | INTEGER | NOT NULL | From subscription |
+| delivered_quantity | INTEGER | DEFAULT 0 | Actual delivered |
+| delivery_status | VARCHAR(20) | NOT NULL | DELIVERED/PENDING_TOKEN/CASH_SALE/NOT_DELIVERED/CANCELLED |
+| delivery_source | VARCHAR(20) | NOT NULL, DEFAULT 'PLANNED' | PLANNED/UNPLANNED |
+| token_sheet_number | INTEGER | NULLABLE | Token sheet # used |
+| token_book_issue_id | INTEGER | FK -> token_book_issues.id, NULLABLE | |
+| added_by | INTEGER | FK -> users.id, NULLABLE | Who added unplanned delivery |
+| added_reason | VARCHAR(500) | NULLABLE | Reason for unplanned delivery |
+| cash_amount | NUMERIC(10,2) | NULLABLE | Amount for cash sales |
+| is_edited | BOOLEAN | DEFAULT FALSE | Edited from reopened session |
+| last_edited_by | INTEGER | FK -> users.id, NULLABLE | |
+| last_edited_at | TIMESTAMPTZ | NULLABLE | |
+| shift | VARCHAR(10) | NOT NULL | Denormalized from session |
+| delivery_date | DATE | NOT NULL | Denormalized from session |
+| remarks | VARCHAR(500) | NULLABLE | |
+| version | INTEGER | NOT NULL, DEFAULT 1 | Optimistic locking |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE | Soft delete |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() | |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate now() | |
+
+**Foreign keys**: session_id -> delivery_sessions.id, customer_id -> customers.id, milk_type_id -> milk_types.id, token_book_issue_id -> token_book_issues.id, added_by -> users.id, last_edited_by -> users.id
+**Relationships**: Belongs to Session/Customer/MilkType/TokenBookIssue; has many SessionEdits, has many TokenSheetWarnings
+
+**Business rules**:
+- DELIVERED status requires a token_sheet_number
+- CASH_SALE status requires cash_amount
+- Optimistic locking via version column (ConcurrentEditError on mismatch)
+
+---
+
+## Table: session_edits (immutable audit log)
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | INTEGER | PRIMARY KEY, INDEX | Auto-increment |
+| session_id | INTEGER | FK -> delivery_sessions.id, NOT NULL | |
+| delivery_id | INTEGER | FK -> daily_deliveries.id, NULLABLE | NULL for session-level edits (reopen) |
+| edited_by | INTEGER | FK -> users.id, NOT NULL | |
+| edit_type | VARCHAR(30) | NOT NULL | SESSION_REOPEN/STATUS_CHANGE |
+| old_value | JSONB | NOT NULL | Snapshot before change |
+| new_value | JSONB | NOT NULL | Snapshot after change |
+| reason | TEXT | NOT NULL | Why the edit was made |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() | |
+
+**Foreign keys**: session_id -> delivery_sessions.id, delivery_id -> daily_deliveries.id, edited_by -> users.id
+**Note**: This table has NO is_active or updated_at — it's an immutable audit trail. Records are never deleted.
+
+---
+
+## Table: token_sheet_warnings
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | INTEGER | PRIMARY KEY, INDEX | Auto-increment |
+| delivery_id | INTEGER | FK -> daily_deliveries.id, NOT NULL | |
+| warning_code | VARCHAR(30) | NOT NULL | NON_SEQUENTIAL_SHEET/SHEET_OUT_OF_ORDER/GAP_DETECTED/SHEET_ALREADY_USED/NEW_BOOK_BEFORE_OLD_FINISHED |
+| warning_message | TEXT | NOT NULL | Human-readable description |
+| sheet_number | INTEGER | NOT NULL | The sheet that triggered the warning |
+| expected_sheet | INTEGER | NULLABLE | What sheet was expected |
+| book_issue_id | INTEGER | FK -> token_book_issues.id, NULLABLE | |
+| metadata | JSONB | NULLABLE | Additional context |
+| acknowledged_by | INTEGER | FK -> users.id, NULLABLE | Who acknowledged |
+| acknowledged_at | TIMESTAMPTZ | NULLABLE | When acknowledged |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() | |
+
+**Foreign keys**: delivery_id -> daily_deliveries.id, book_issue_id -> token_book_issues.id, acknowledged_by -> users.id
+**Relationships**: Belongs to DailyDelivery/TokenBookIssue
+
+**Warning codes**: NON_SEQUENTIAL_SHEET, SHEET_OUT_OF_ORDER, GAP_DETECTED, SHEET_ALREADY_USED, NEW_BOOK_BEFORE_OLD_FINISHED
+
+---
+
 ## Alembic Migration History
 
 | # | Revision | Description |
@@ -282,11 +429,12 @@ routes ────────┐   │
 | 1 | cd5183b67dae | Initial schema (users, routes) |
 | 2 | de893ed2ffb7 | Add customers table |
 | 3 | 4085a4134c96 | Add milk_types and employees tables |
-| 4 | b3c4d5e6f7a8 | Add employee fields (user_id, etc.) |
+| 4 | b3c4d5e6f7a8 | Add employee fields (employee_code, role, route_id, user_id, timestamps) |
 | 5 | 2a032b2352b4 | Add subscriptions table |
 | 6 | 3f8a1b2c4d5e | Create delivery_exceptions table |
-| 7 | 4e5f6a7b8c9d | Create token_books tables (3 tables) |
-| 8 | 1154a3a25414 | Remove is_active in update customer |
+| 7 | 4e5f6a7b8c9d | Create token_books tables (token_identities, token_book_issues, token_book_payments) |
+| 8 | **5a6b7c8d9e0f** | **Create delivery tables (delivery_sessions, daily_deliveries, session_edits, token_sheet_warnings)** |
+| 9 | 1154a3a25414 | Remove is_active in update customer (EMPTY — no upgrade/downgrade logic) |
 
 ### Useful Commands
 ```bash
@@ -300,24 +448,17 @@ alembic revision --autogenerate -m "description"  # Create new migration
 
 ## Indexes
 
-The following columns have explicit indexes (via `index=True`):
-- customers.id
-- routes.id
-- milk_types.id
-- employees.id
-- subscriptions.id
-- delivery_exceptions.id
-- token_identities.id
-- token_book_issues.id
-- token_book_payments.id
+All primary key columns have explicit indexes (via `index=True`):
+- users.id, routes.id, customers.id, milk_types.id, employees.id
+- subscriptions.id, delivery_exceptions.id
+- token_identities.id, token_book_issues.id, token_book_payments.id
+- **delivery_sessions.id, daily_deliveries.id, session_edits.id, token_sheet_warnings.id**
 
-Unique constraints (implicit indexes):
+Additional composite unique constraints (implicit indexes):
 - users.username
-- routes.route_code
-- routes.route_name
-- customers.customer_code
-- customers.primary_phone
+- routes.route_code, routes.route_name
+- customers.customer_code, customers.primary_phone
 - milk_types.milk_name
-- employees.employee_code
-- employees.phone
+- employees.employee_code, employees.phone
 - token_identities (customer_id, milk_type_id, token_number)
+- **delivery_sessions (route_id, delivery_date, shift)**

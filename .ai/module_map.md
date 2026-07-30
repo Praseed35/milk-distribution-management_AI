@@ -1,6 +1,6 @@
-# Module Map (As of July 26, 2026)
+# Module Map (As of July 29, 2026)
 
-## Implemented Modules ✅
+## Tested Modules ✅ (with test coverage)
 
 ```
 Authentication ✅
@@ -24,67 +24,85 @@ Token Identities ✅ (links Customer → MilkType → Token Number)
 Token Book Issues ✅ (issues books to TokenIdentity, sheet tracking)
     ↓
 Token Book Payments ✅ (records payments for book issues)
+    ↓
+Daily Delivery Management ✅ (Sprint 3: sessions, deliveries, tokens)
+    ↓
+Reconciliation ✅ (Sprint 5: loaded vs token vs cash vs returned)
+    ↓
+Payment Management ✅ (Sprint 6: bills, payments, outstanding)
+    ↓
+Reports & Analytics ✅ (Sprint 7: 6 report types, CSV, cache, RBAC)
 ```
 
-## Planned Modules ❌ (Dependency Order)
+## Code Complete but UNTESTED ⚠️ (no test coverage)
 
 ```
-Daily Delivery Management ❌ (Sprint 3)
+Token Register ⚠️ (sheet-level ledger, Sprint 4 remaining)
     ↓
-Token Register ❌ (Sprint 4 remaining, needs Daily Delivery)
+Warning Log ⚠️ (alert dashboard, Sprint 4 remaining)
+```
+
+## Not Started ❌
+
+```
+Token Register ❌ (sheet-level ledger, Sprint 4 remaining)
     ↓
-Token Ledger ❌ (Sprint 4 remaining, needs Sprint 3 + 5)
-    ↓
-Warning Log ❌ (Sprint 4 remaining, needs Sprint 3 + 5)
-    ↓
-Reconciliation ❌ (Sprint 5, needs Daily Delivery)
-    ↓
-Payment Management ❌ (Sprint 6, needs Reconciliation)
-    ↓
-Reports & Analytics ❌ (Sprint 7, needs all above)
+Warning Log ❌ (alert dashboard, Sprint 4 remaining)
     ↓
 AI Business Intelligence ❌ (Sprint 8)
     ↓
 React Frontend ❌ (Sprint 9)
 ```
 
-## Dependency Graph
+## Dependency Graph (Actual)
 
 ```
-Sprint 1 (Master Data)
-  └─→ Sprint 2 (Subscriptions + Exceptions)
-       └─→ Sprint 3 (Daily Delivery)
-            ├─→ Sprint 4 remaining (Token Register, Ledger, Warning)
-            └─→ Sprint 5 (Reconciliation)
-                 └─→ Sprint 6 (Payment Management)
-                      └─→ Sprint 7 (Reports)
-                           └─→ Sprint 8 (AI BI)
+Sprint 1 (Master Data) ✅ TESTED
+  └─→ Sprint 2 (Subscriptions + Exceptions) ✅ TESTED
+       └─→ Sprint 3 (Daily Delivery) ✅ TESTED
+            ├─→ Sprint 4 remaining (Token Register, Warning) ❌
+            └─→ Sprint 5 (Reconciliation) ✅ TESTED
+                 └─→ Sprint 6 (Payment Management) ✅ TESTED
+                      └─→ Sprint 7 (Reports) ✅ TESTED
+                           └─→ Sprint 8 (AI BI) ❌
 
-Sprint 4 Core (Token Book) ✅ (independent, completed)
+Sprint 4 Core (Token Book) ✅ TESTED (independent)
 
-Sprint 9 (Frontend) - needs all backend complete
+Sprint 9 (Frontend) - needs all backend done
 Sprint 10 (Testing & Deployment) - needs everything
 ```
 
-## Database Table Relationships
+## Database Table Relationships (Complete)
 
 ```
-users ──────────────────────┐
-                             │
-routes ──────────────┐      │
-    │                 │      │
-    │            customers   │
-    │                 │      ├── employees.user_id
-    │            subscriptions│
-    │                 │      │
-    │            delivery_exceptions
-    │
-    ├── token_identities ──────────┐
-    │                 │             │
-    │            token_book_issues  │
-    │                 │             │
-    │            token_book_payments│
-    │                              └── collected_by → users.id
-    │
-    └── employees.route_id
+users ──────────────────────────────────────────┐
+  │                                              │
+  ├──< Employee (user_id)                       │
+  ├──< TokenBookPayment (collected_by)          │
+  ├──< DeliverySession (reopened_by)            │
+  ├──< DailyDelivery (added_by, last_edited_by) │
+  └──< SessionEdit (edited_by)                  │
+                                                 │
+Route ───────────────────────────────────────────┤
+  │                                              │
+  ├──< Customer (route_id) ──< Subscription     │
+  │     │                    └──> MilkType       │
+  │     ├──< TokenIdentity ──> MilkType          │
+  │     ├──< TokenBookIssue ──> MilkType         │
+  │     ├──< DailyDelivery ──> MilkType          │
+  │     └──< TokenBookIssue (customer_id)        │
+  │                                              │
+  ├──< Employee (route_id)                      │
+  ├──< DeliverySession (route_id)               │
+  │     │                                       │
+  │     ├──< DailyDelivery (session_id)          │
+  │     │     ├──< TokenSheetWarning (delivery) │
+  │     │     └──< SessionEdit (delivery_id)    │
+  │     └──< SessionEdit (session_id)           │
+  │                                              │
+  └──< DeliverySession (delivery_partner_id)    │
+                                                 │
+TokenIdentity ───< TokenBookIssue ───< TokenBookPayment
+                    │        └──< DailyDelivery
+                    │        └──< TokenSheetWarning
 ```

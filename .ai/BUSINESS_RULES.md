@@ -138,7 +138,53 @@ A milk distribution business delivers milk to customers on fixed routes. Custome
 
 ---
 
-## 13. Soft Delete Pattern
+## 13. Delivery Session Rules
+
+1. **Unique session**: Only one session per (route_id, delivery_date, shift) combination
+2. **Session state machine**:
+   - PLANNED -> STARTED (via dispatch/start)
+   - STARTED -> COMPLETED (manual completion)
+   - COMPLETED -> CLOSED (via close, requires balanced reconciliation)
+   - CLOSED -> COMPLETED (via reopen, owner only)
+3. **Dispatch can only be recorded once** per session
+4. **Optimistic locking**: Session and delivery records have a `version` column incremented on each write; concurrent edits raise `ConcurrentEditError`
+5. **Reopen tracking**: Sessions track `reopened_by`, `reopened_at`, and `reopen_count`
+6. **All edits are audited**: Every status change creates a `SessionEdit` record with old/new JSONB snapshots
+
+## 14. Delivery Registration Rules
+
+1. **Delivery statuses**: DELIVERED, PENDING_TOKEN, CASH_SALE, NOT_DELIVERED, CANCELLED
+2. **Delivery sources**: PLANNED (from subscription) or UNPLANNED (walk-in/phone order)
+3. **Unplanned deliveries** require a reason and can be registered as TOKEN_SHEET, CASH, or PENDING
+4. **Token registration** sets delivery_status to DELIVERED and delivered_quantity to planned_quantity
+5. **Token sheet validation** rules:
+   - Must have an active token book for the customer + milk_type
+   - Sheet number must be within book range (1 to total_sheets)
+   - Sheet must not already be used (checked against daily_deliveries with DELIVERED status)
+   - Non-sequential sheets (skipping ahead) generate NON_SEQUENTIAL_SHEET warning
+   - Out-of-order sheets (using old sheet) generate SHEET_OUT_OF_ORDER warning
+   - Old books with remaining sheets generate NEW_BOOK_BEFORE_OLD_FINISHED warning
+   - Warnings require acknowledgment before proceeding
+
+## 15. Reconciliation Rules
+
+1. **Formula**: `difference = loaded_milk - (token_registered + cash_sales + returned_milk)`
+2. **Balanced check**: `|difference| < 0.01` (tolerance for floating point)
+3. **Cannot close** an unbalanced session (raises `SessionNotBalancedError`)
+4. **Cannot close** an already closed session (raises `SessionAlreadyClosedError`)
+5. **Cash sales** can be added/removed during reconciliation; stored as DailyDelivery with CASH_SALE status
+6. **Reconciliation validation** checks for pending tokens and mismatches before allowing close
+
+## 16. Delivery Edit Rules
+
+1. **Only Owner** can reopen closed sessions (`OwnerRequiredError`)
+2. **Only Owner** can edit deliveries within a reopened session
+3. **Reopening** changes session status from CLOSED to COMPLETED
+4. **Token sheet return**: When undoing a delivery, the token sheet is returned to the customer (book.current_sheet decremented)
+5. **Edit history** is available via `GET /deliveries/session/{session_id}/edit-history`
+6. **Authentication note**: `delivery_edit.py` currently hardcodes `user_id=1` instead of using authenticated user (**BUG**)
+
+## 17. Soft Delete Pattern
 
 All entities use soft delete:
 1. Every table has `is_active = Boolean, default=True`
@@ -148,3 +194,4 @@ All entities use soft delete:
    - Subscription -> "INACTIVE"
    - DeliveryException -> "CANCELLED"
 5. Records are never physically deleted from the database
+6. **Exception**: `session_edits` table has NO is_active — it's an immutable audit trail

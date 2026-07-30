@@ -54,10 +54,18 @@
 - Token Register (sheet-level ledger) ❌
 - Warning Log dashboard ❌
 
-### Reports and Analytics (Sprint 7) — NOT STARTED ❌
-- Route-wise reports ❌
-- Revenue reports ❌
-- Collection efficiency ❌
+### Reports and Analytics (Sprint 7) — COMPLETED ✅ TESTED ✅
+- Route delivery reports (loaded vs delivered vs cash vs shortage) ✅
+- Revenue reports (by source, payment mode, route, milk type) ✅
+- Collection efficiency (billed vs paid vs outstanding, aging buckets) ✅
+- Customer consumption (daily trend with detection: increasing/declining/stable) ✅
+- Token book utilization (sheets used/remaining, low threshold flags) ✅
+- Operational dashboard (session counts, deliveries, flagged issues) ✅
+- CSV export (all list endpoints via ?format=csv) ✅
+- In-memory cache (configurable TTL, bypass with ?refresh=true) ✅
+- RBAC enforcement (OWNER=all, ADMIN/CHECKER=operational, DELIVERY_PARTNER=own route) ✅
+- Alembic migration (indexes on delivery_status, payment_date, bill_period_start) ✅
+- 24 tests across 6 story areas + RBAC + CSV + auth ✅
 
 ### AI Business Intelligence (Sprint 8) — NOT STARTED ❌
 - Demand forecasting ❌
@@ -75,10 +83,10 @@
 
 | Status | Count |
 |--------|-------|
-| Tested Modules | 13 (master data + subscriptions + exceptions + tokens + delivery + payments) |
+| Tested Modules | 14 (master data + subscriptions + exceptions + tokens + delivery + payments + reports) |
 | Untested Modules | 0 |
 | Known Bugs | 0 |
-| Test Files | 11 (delivery + payments added) |
-| Tables | 17 (added customer_payments, customer_bills, customer_bill_items) |
-| API Endpoints | ~78 (14 payment/bill endpoints added) |
+| Test Files | 12 (delivery + payments + reports) |
+| Tables | 17 (no new tables — reports use aggregation queries) |
+| API Endpoints | ~84 (6 report endpoints added) |
 | Version | 1.0 Development |

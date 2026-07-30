@@ -10,11 +10,18 @@
 
 ```python
 app = FastAPI()
-# 9 routers registered
+# 13 routers registered (line 30-40):
+#   user, auth, route, customer, milk_type, subscription,
+#   employee, delivery_exception, token_book, deliveries,
+#   delivery_edit, payments, reports
 # GET "/" returns {"message": "Milk Management API"}
 ```
 
 The app is a standard FastAPI application with no middleware, no CORS, no startup/shutdown events. All routers are registered at module level via `app.include_router()`.
+
+**Delivery routers**:
+- `deliveries` (prefix `/deliveries/sessions`) — session lifecycle + reconciliation
+- `delivery_edit` (prefix `/deliveries`) — delivery CRUD + token registration + edit
 
 ---
 
@@ -179,6 +186,82 @@ POST /token-books/payments/
   <- HTTP 201 with TokenBookPaymentResponse
 ```
 
+### Delivery Session Lifecycle
+```
+POST /deliveries/sessions/
+  -> deliveries.py router
+  -> delivery_service.create_session(db, route_id, date, shift, partner_id)
+    -> Validate route exists
+    -> Validate employee exists
+    -> Check no duplicate session (route+date+shift)
+    -> Create DeliverySession (status=PLANNED)
+    -> db.add + commit + refresh
+  <- HTTP 201 with DeliverySessionResponse
+
+POST /deliveries/sessions/{id}/dispatch
+  -> deliveries.py router
+  -> delivery_service.record_dispatch(db, session_id, total_milk_loaded)
+    -> Validate session exists and is PLANNED
+    -> Validate dispatch not already recorded
+    -> Set total_milk_loaded, status=STARTED
+    -> commit + refresh
+  <- HTTP 200 with DeliverySessionResponse
+
+GET /deliveries/sessions/{id}/checklist
+  -> deliveries.py router
+  -> Queries DailyDelivery records for session
+  -> Constructs ChecklistCustomer list with name, address, phone, milk_type, quantity
+  <- HTTP 200 with DeliveryChecklistResponse
+
+POST /deliveries/sessions/{id}/close
+  -> deliveries.py router
+  -> delivery_reconciliation.calculate_reconciliation(db, session_id)
+    -> Sum token registered, cash sales, returned milk
+    -> Calculate difference = loaded - accounted
+    -> Check if |difference| < 0.01
+  -> delivery_service.close_session(db, session_id, is_balanced)
+    -> Validate session is COMPLETED
+    -> Raise SessionNotBalancedError if not balanced
+    -> Set status=CLOSED, reconciliation_status=BALANCED
+  <- HTTP 200 with DeliverySessionResponse
+```
+
+### Token Registration
+```
+POST /deliveries/{id}/register-token
+  -> delivery_edit.py router
+  -> delivery_registration.register_token(db, delivery_id, sheet_number, ...)
+    -> Validate delivery exists
+    -> delivery_registration.validate_token_sheet(db, customer_id, milk_type_id, sheet_number)
+      -> Check for active token book
+      -> Check sheet number in range
+      -> Check sheet not already used
+      -> Detect non-sequential / out-of-order sheets
+      -> Detect old books with remaining sheets
+      -> Return is_valid, warnings, requires_acknowledgment
+    -> If warnings require acknowledgment, check acknowledged_warnings list
+    -> Update delivery: set token_sheet_number, status=DELIVERED, delivered_quantity=planned
+    -> Update book: current_sheet = sheet_number + 1
+    -> commit + refresh
+  <- HTTP 200 with TokenRegistrationResponse
+```
+
+### Reconciliation Calculation
+```
+GET /deliveries/sessions/{id}/reconciliation
+  -> deliveries.py router
+  -> delivery_reconciliation.calculate_reconciliation(db, session_id)
+    -> Query all active deliveries for session
+    -> token_registered = SUM(delivered_quantity WHERE status=DELIVERED)
+    -> cash_sales = SUM(delivered_quantity WHERE status=CASH_SALE)
+    -> returned_milk = session.total_returned_milk
+    -> loaded_milk = session.total_milk_loaded
+    -> total_accounted = token_registered + cash_sales + returned_milk
+    -> difference = loaded_milk - total_accounted
+    -> is_balanced = abs(difference) < 0.01
+  <- HTTP 200 with ReconciliationResponse
+```
+
 ---
 
 ## 7. Authentication Flow
@@ -224,22 +307,64 @@ All models inherit from `Base`. Alembic uses `Base.metadata` for migration gener
 
 ## 9. Migration History
 
-8 migrations in chronological order:
+9 migrations in chronological order:
 
 | Migration | Description |
 |-----------|-------------|
 | `cd5183b67dae` | Initial schema (users, routes) |
 | `de893ed2ffb7` | Add customers table |
 | `4085a4134c96` | Add milk_types and employees tables |
-| `b3c4d5e6f7a8` | Add employee fields |
+| `b3c4d5e6f7a8` | Add employee fields (employee_code, role, route_id, user_id, timestamps) |
 | `2a032b2352b4` | Add subscriptions table |
 | `3f8a1b2c4d5e` | Create delivery_exceptions table |
 | `4e5f6a7b8c9d` | Create token_books tables (3 tables) |
-| `1154a3a25414` | Remove is_active in update customer |
+| **`5a6b7c8d9e0f`** | **Create delivery tables (delivery_sessions, daily_deliveries, session_edits, token_sheet_warnings)** |
+| `1154a3a25414` | Remove is_active in update customer (EMPTY — no upgrade/downgrade logic) |
 
 ---
 
-## 10. Testing Architecture
+## 10. Reports Module
+
+**Files**: `app/routers/reports.py`, `app/schemas/reports.py`, `app/services/reports/`
+
+### Architecture
+
+Reports are read-only — no new database tables. All data is computed via SQL aggregation queries against existing tables.
+
+```
+Router (reports.py)
+  └─→ Service (route_delivery.py, revenue.py, ...)
+        └─→ SQLAlchemy aggregation queries on existing tables
+        └─→ Returns list[dict] or dict
+  └─→ Cache (cache.py)
+        └─→ In-memory dict with TTL (300s dashboard/revenue, 60s others)
+        └─→ Bypass with ?refresh=true
+  └─→ CSV (common.py: generate_csv_response)
+        └─→ io.StringIO + csv.DictWriter + StreamingResponse
+```
+
+### Report Types
+
+| Endpoint | Route | Roles |
+|----------|-------|-------|
+| Route Delivery | `GET /reports/route-delivery` | OWNER, ADMIN, CHECKER, DELIVERY_PARTNER |
+| Revenue | `GET /reports/revenue` | OWNER only |
+| Collection Efficiency | `GET /reports/collection-efficiency` | OWNER, ADMIN |
+| Customer Consumption | `GET /reports/customer/{id}/consumption` | OWNER, ADMIN, CHECKER |
+| Token Utilization | `GET /reports/token-utilization` | OWNER, ADMIN |
+| Operational Dashboard | `GET /reports/dashboard` | OWNER, ADMIN, CHECKER, DELIVERY_PARTNER |
+
+### RBAC Strategy
+
+- `DELIVERY_PARTNER` automatically scoped to assigned route via `Employee.route_id`
+- Revenue (financial data) restricted to `OWNER` only
+- Collection/token data restricted to `OWNER`/`ADMIN`
+- Public (authenticated): route delivery, consumption, dashboard
+- `?format=csv` triggers `StreamingResponse` with `Content-Disposition` header
+
+---
+
+## 11. Testing Architecture
 
 **File**: `tests/conftest.py`
 
@@ -257,22 +382,25 @@ The key insight: every test runs inside a transaction that is rolled back, so th
 
 ---
 
-## 11. Constants and Enums
+## 12. Constants and Enums
 
 **File**: `app/constants/statuses.py`
 
-Defines enums for future use but currently not enforced in models/schemas:
+Defines enums for status management. **Delivery service code imports these enums**, but they are not enforced as DB column type constraints (stored as plain strings).
 
-| Enum | Values |
-|------|--------|
-| SessionStatus | PLANNED, STARTED, COMPLETED, CLOSED |
-| PaymentStatus | PAID, PENDING, PARTIAL |
-| TokenStatus | COLLECTED, PENDING, CARRY_FORWARD |
-| DeliveryStatus | DELIVERED, SKIPPED, CANCELLED |
-| ExceptionType | VACATION, NO_MILK, HOLIDAY |
-| ExceptionStatus | ACTIVE, COMPLETED, CANCELLED |
-| BookIssueStatus | WAITING, ACTIVE, COMPLETED |
-| PaymentMode | PREPAID, POSTPAID |
+| Enum | Values | Used In |
+|------|--------|---------|
+| SessionStatus | PLANNED, STARTED, COMPLETED, CLOSED | `delivery_service.py` (state machine) |
+| PaymentStatus | PAID, PENDING, PARTIAL | Token book payments |
+| TokenStatus | COLLECTED, PENDING, CARRY_FORWARD | Not used yet |
+| DeliveryStatus | DELIVERED, PENDING_TOKEN, CASH_SALE, NOT_DELIVERED, SKIPPED, CANCELLED | `delivery_registration.py` |
+| DeliverySource | PLANNED, UNPLANNED | `delivery_registration.py` |
+| WarningCode | NON_SEQUENTIAL_SHEET, SHEET_OUT_OF_ORDER, GAP_DETECTED, SHEET_ALREADY_USED, NEW_BOOK_BEFORE_OLD_FINISHED | `delivery_registration.py` (token validation) |
+| ReconciliationStatus | BALANCED, UNBALANCED, PENDING | `delivery_reconciliation.py` |
+| ExceptionType | VACATION, NO_MILK, HOLIDAY | Delivery exceptions |
+| ExceptionStatus | ACTIVE, COMPLETED, CANCELLED | Delivery exceptions |
+| BookIssueStatus | WAITING, ACTIVE, COMPLETED | Token book issues |
+| PaymentMode | PREPAID, POSTPAID | Token book payments |
 
 **File**: `app/constants/roles.py`
 ```python
@@ -289,11 +417,11 @@ class Shift(str, Enum):
     MORNING = "MORNING"
     EVENING = "EVENING"
 ```
-Used in subscription schema import but not enforced as a field constraint.
+Used in schema validation patterns but not enforced as DB constraint.
 
 ---
 
-## 12. Frontend Readiness
+## 13. Frontend Readiness
 
 **Current state**: Backend only. No CORS configured. No OpenAPI customization.
 
