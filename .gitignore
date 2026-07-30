@@ -31,5 +31,13 @@ Thumbs.db
 query.sql
 overview.docx
 
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Environment files
+.env*
+
 # Spec Kit
 # .specify/
