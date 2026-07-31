@@ -15,8 +15,9 @@ class DuplicateTokenIdentityError(Exception):
         token_number: int
     ):
         super().__init__(
-            f"Token identity already exists for customer {customer_id}, "
-            f"milk type {milk_type_id}, token number {token_number}."
+            f"Token number {token_number} is already in use: either for "
+            f"customer {customer_id} with milk type {milk_type_id}, "
+            f"or by another active customer."
         )
 
 

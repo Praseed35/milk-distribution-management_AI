@@ -4,7 +4,9 @@
 
 ---
 
-## Implemented Tables (10)
+## Implemented Tables (17)
+
+> All 17 tables below are implemented. Migration history and indexes are in `DATABASE.md`.
 
 ### 1. users
 | Column | Type | Constraints |
@@ -142,22 +144,160 @@ Unique constraint: (customer_id, milk_type_id, token_number)
 | created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
 | updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
 
+### 11. delivery_sessions
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| route_id | INTEGER | FK → routes.id, NOT NULL |
+| delivery_date | DATE | NOT NULL |
+| shift | VARCHAR(10) | NOT NULL (MORNING/EVENING) |
+| delivery_partner_id | INTEGER | FK → employees.id, NOT NULL |
+| status | VARCHAR(20) | NOT NULL, DEFAULT "PLANNED" (PLANNED/STARTED/COMPLETED/CLOSED) |
+| total_milk_loaded | NUMERIC(10,2) | DEFAULT 0 |
+| total_token_registered | NUMERIC(10,2) | DEFAULT 0 (auto-calculated) |
+| total_cash_sales | NUMERIC(10,2) | DEFAULT 0 |
+| total_returned_milk | NUMERIC(10,2) | DEFAULT 0 |
+| reconciliation_status | VARCHAR(20) | DEFAULT "PENDING" (PENDING/BALANCED/UNBALANCED) |
+| reopened_by | INTEGER | FK → users.id, NULLABLE |
+| reopened_at | TIMESTAMPTZ | NULLABLE |
+| reopen_count | INTEGER | DEFAULT 0 |
+| version | INTEGER | NOT NULL, DEFAULT 1 (optimistic locking) |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
+
+Unique constraint: (route_id, delivery_date, shift). State machine: PLANNED -> STARTED -> COMPLETED -> CLOSED <-> COMPLETED (reopen).
+
+### 12. daily_deliveries
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| session_id | INTEGER | FK → delivery_sessions.id, NOT NULL |
+| customer_id | INTEGER | FK → customers.id, NOT NULL |
+| milk_type_id | INTEGER | FK → milk_types.id, NOT NULL |
+| planned_quantity | INTEGER | NOT NULL (from subscription) |
+| delivered_quantity | INTEGER | DEFAULT 0 |
+| delivery_status | VARCHAR(20) | NOT NULL (DELIVERED/PENDING_TOKEN/CASH_SALE/NOT_DELIVERED/CANCELLED) |
+| delivery_source | VARCHAR(20) | NOT NULL, DEFAULT "PLANNED" (PLANNED/UNPLANNED) |
+| token_sheet_number | INTEGER | NULLABLE |
+| token_book_issue_id | INTEGER | FK → token_book_issues.id, NULLABLE |
+| added_by | INTEGER | FK → users.id, NULLABLE |
+| added_reason | VARCHAR(500) | NULLABLE |
+| cash_amount | NUMERIC(10,2) | NULLABLE |
+| is_edited | BOOLEAN | DEFAULT FALSE |
+| last_edited_by | INTEGER | FK → users.id, NULLABLE |
+| last_edited_at | TIMESTAMPTZ | NULLABLE |
+| shift | VARCHAR(10) | NOT NULL (denormalized from session) |
+| delivery_date | DATE | NOT NULL (denormalized from session) |
+| remarks | VARCHAR(500) | NULLABLE |
+| version | INTEGER | NOT NULL, DEFAULT 1 (optimistic locking) |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
+
+Rules: DELIVERED requires token_sheet_number; CASH_SALE requires cash_amount; concurrent writes raise ConcurrentEditError.
+
+### 13. session_edits (immutable audit log)
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| session_id | INTEGER | FK → delivery_sessions.id, NOT NULL |
+| delivery_id | INTEGER | FK → daily_deliveries.id, NULLABLE (NULL for session-level edits/reopen) |
+| edited_by | INTEGER | FK → users.id, NOT NULL |
+| edit_type | VARCHAR(30) | NOT NULL (SESSION_REOPEN/STATUS_CHANGE) |
+| old_value | JSONB | NOT NULL (snapshot before) |
+| new_value | JSONB | NOT NULL (snapshot after) |
+| reason | TEXT | NOT NULL |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+
+No is_active / no updated_at — immutable audit trail, records never deleted.
+
+### 14. token_sheet_warnings
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| delivery_id | INTEGER | FK → daily_deliveries.id, NOT NULL |
+| warning_code | VARCHAR(30) | NOT NULL |
+| warning_message | TEXT | NOT NULL |
+| sheet_number | INTEGER | NOT NULL |
+| expected_sheet | INTEGER | NULLABLE |
+| book_issue_id | INTEGER | FK → token_book_issues.id, NULLABLE |
+| metadata | JSONB | NULLABLE |
+| acknowledged_by | INTEGER | FK → users.id, NULLABLE |
+| acknowledged_at | TIMESTAMPTZ | NULLABLE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+
+Warning codes: NON_SEQUENTIAL_SHEET, SHEET_OUT_OF_ORDER, GAP_DETECTED, SHEET_ALREADY_USED, NEW_BOOK_BEFORE_OLD_FINISHED.
+
+### 15. customer_bills
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| customer_id | INTEGER | FK → customers.id, NOT NULL |
+| bill_date | DATE | SERVER DEFAULT current_date, NOT NULL |
+| bill_period_start | DATE | NOT NULL (INDEXED) |
+| bill_period_end | DATE | NOT NULL |
+| total_amount | NUMERIC(10,2) | NOT NULL |
+| paid_amount | NUMERIC(10,2) | DEFAULT 0 |
+| balance_amount | NUMERIC(10,2) | DEFAULT 0 |
+| status | VARCHAR(20) | NOT NULL, DEFAULT "PENDING" (PENDING/PARTIAL/PAID/OVERDUE/CANCELLED) |
+| due_date | DATE | NULLABLE |
+| remarks | VARCHAR(255) | NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
+
+Generated from daily deliveries (DELIVERED/CASH_SALE) in a period × milk type unit_price. See BUSINESS_RULES §19.
+
+### 16. customer_bill_items
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| bill_id | INTEGER | FK → customer_bills.id, NOT NULL |
+| milk_type_id | INTEGER | FK → milk_types.id, NOT NULL |
+| quantity | INTEGER | NOT NULL |
+| unit_price | NUMERIC(10,2) | NOT NULL |
+| amount | NUMERIC(10,2) | NOT NULL (quantity × unit_price) |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+
+Defined in the same file as CustomerBill (`app/models/customer_bill.py`); `milk_name` property exposes the milk type name.
+
+### 17. customer_payments
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | INTEGER | PK, INDEX |
+| customer_id | INTEGER | FK → customers.id, NOT NULL |
+| payment_date | TIMESTAMPTZ | SERVER DEFAULT now(), NOT NULL (INDEXED) |
+| amount | NUMERIC(10,2) | NOT NULL |
+| payment_mode | VARCHAR(20) | NOT NULL (CASH/UPI/CARD/CHEQUE/BANK_TRANSFER) |
+| payment_type | VARCHAR(20) | NOT NULL (ADVANCE/BILL_PAYMENT) |
+| reference_number | VARCHAR(50) | NULLABLE |
+| bill_id | INTEGER | FK → customer_bills.id, NULLABLE (required for BILL_PAYMENT) |
+| collected_by | INTEGER | FK → users.id, NULLABLE |
+| remarks | VARCHAR(255) | NULLABLE |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate |
+
+Rules: BILL_PAYMENT requires bill_id; bill must not be PAID or CANCELLED; recording a payment updates the bill's paid/balance amounts and status. See BUSINESS_RULES §18.
+
 ---
 
 ## Planned Tables (Not Yet Implemented)
 
-These are needed for future sprints:
+The tables below are the only ones still planned. Everything previously listed as "planned" has either been implemented under a different design or is no longer needed:
 
-| Table | Sprint | Purpose |
-|-------|--------|---------|
-| delivery_sessions | Sprint 3 | Daily delivery session per route/shift |
-| delivery_items | Sprint 3 | Per-subscription delivery record |
-| token_register | Sprint 4 ext | Sheet-level token tracking |
-| token_ledger | Sprint 4 ext | Token transaction history |
-| warning_logs | Sprint 4 ext | Alert/warning records |
-| reconciliation_sessions | Sprint 5 | Daily reconciliation per route |
-| reconciliation_items | Sprint 5 | Per-subscription reconciliation |
-| payment_ledger | Sprint 6 | Customer payment tracking |
+| Table | Sprint | Purpose | Status |
+|-------|--------|---------|--------|
+| token_register | Sprint 4 ext | Sheet-level token ledger | STILL PLANNED |
+| token_ledger | Sprint 4 ext | Token transaction history | STILL PLANNED |
+
+**Superseded designs (implemented differently)**:
+- `delivery_sessions`, `delivery_items` → implemented as `delivery_sessions` + `daily_deliveries` (Sprint 5)
+- `reconciliation_sessions`, `reconciliation_items` → folded into `delivery_sessions.reconciliation_status` + `daily_deliveries` (Sprint 5)
+- `payment_ledger` → implemented as `customer_payments` (Sprint 6)
+- `warning_logs` → implemented as `token_sheet_warnings` (Sprint 5)
 
 ---
 

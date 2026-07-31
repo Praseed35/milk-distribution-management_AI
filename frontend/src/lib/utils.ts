@@ -48,6 +48,7 @@ export function getStatusColor(status: string): string {
     PENDING: "bg-amber-100 text-amber-800",
     PAID: "bg-emerald-100 text-emerald-800",
     PARTIAL: "bg-amber-100 text-amber-800",
+    WAITING: "bg-amber-100 text-amber-800",
     PREPAID: "bg-indigo-100 text-indigo-800",
     POSTPAID: "bg-amber-100 text-amber-800",
     OVERDUE: "bg-red-100 text-red-800",

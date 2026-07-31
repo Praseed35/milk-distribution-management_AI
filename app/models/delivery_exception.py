@@ -31,6 +31,11 @@ class DeliveryException(Base):
         nullable=False
     )
 
+    shift = Column(
+        String(10),
+        nullable=True
+    )
+
     start_date = Column(
         DateTime(timezone=True),
         nullable=False

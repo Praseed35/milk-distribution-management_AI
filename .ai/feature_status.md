@@ -1,4 +1,4 @@
-# Feature Status (As of July 29, 2026 — Updated)
+# Feature Status (As of July 31, 2026 — Updated)
 
 ## Backend
 
@@ -71,8 +71,15 @@
 - Demand forecasting ❌
 - Anomaly detection ❌
 
-## Frontend
-- React application — NOT STARTED (Sprint 9)
+## Frontend (Sprint 9 — IN PROGRESS)
+- **Phase 1: Setup, Auth, Layout — COMPLETED ✅** (backend CORS + /api/v1 prefix + health endpoint; Vite scaffold; auth flow; layout; UI primitives)
+- **Phase 2: Master Data CRUD — COMPLETED ✅** (Routes, Customers, Milk Types, Employees, Users)
+- Phase 3: Subscriptions & Exceptions — NOT STARTED ❌ (T070-T083)
+- Phase 4: Token Books — NOT STARTED ❌ (T084-T099)
+- Phase 5: Delivery Management — NOT STARTED ❌ (T100-T122)
+- Phase 6: Payments — NOT STARTED ❌ (T123-T131)
+- Phase 7: Reports — NOT STARTED ❌ (T132-T146)
+- Phase 8: Polish & Testing — NOT STARTED ❌ (T147-T158)
 
 ## Testing and Deployment
 - Docker, CI/CD — NOT STARTED (Sprint 10)

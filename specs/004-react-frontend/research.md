@@ -68,3 +68,29 @@
 | Empty list states | DataTable shows "No records found" with optional Create button |
 | Large datasets | Pagination (default page_size=50), search/filter where available |
 | 30-min forced re-login | Accepted tradeoff for v1. Noted for refresh token enhancement. |
+
+## Phase 3 Research: Subscriptions & Exceptions (verified against backend 2026-07-31)
+
+### Response shape — plain arrays, no envelope
+- **Decision**: `GET /subscriptions/` and `GET /delivery-exceptions/` return plain JSON arrays of flat list DTOs. The api modules type them as `SubscriptionListResponse[]` / `DeliveryExceptionListResponse[]` directly.
+- **Rationale**: Verified in `app/routers/subscriptions.py` (response_model=`list[SubscriptionListResponse]`) and `app/routers/delivery_exceptions.py` (`list[DeliveryExceptionListResponse]`). No pagination envelope — frontend does not paginate these lists (client-side sort only).
+- **Alternatives considered**: Treating list as `PaginatedResponse` (wrong — no `total`/`page` fields present).
+
+### Subscription create/update field sets
+- **Decision**: `SubscriptionCreate` = `customer_id, milk_type_id, morning_quantity, evening_quantity, status, remarks`. `SubscriptionUpdate` = `morning_quantity, evening_quantity, status, remarks`. **No `start_date`/`end_date` accepted on create** — these are response-only (server assigns `start_date`).
+- **Rationale**: Verified against `app/schemas/subscription.py`. The earlier `data-model.md` draft included `start_date`/`end_date` on create — corrected. `morning_quantity`/`evening_quantity` default to 0 with `ge=0`.
+- **Alternatives considered**: Keeping the draft create shape (would cause 422s — rejected).
+
+### List vs Detail DTO split
+- **Decision**: Use two TS interfaces per module. List: flat joined fields (`customer_name`, `customer_code`, `route_name`, `milk_type_name`, `milk_type_volume` for subscriptions; `customer_id`, `customer_code`, `customer_name`, `route_name` for exceptions). Detail: nested objects (`customer: CustomerSummaryResponse`, `milk_type: MilkTypeSummaryResponse`; `subscription: SubscriptionSummaryResponse` for exceptions).
+- **Rationale**: Backend defines distinct `*ListResponse` and `*DetailResponse` schemas with different shapes. The edit form loads detail via `GET /subscriptions/{id}`; the table renders the list DTO.
+- **Alternatives considered**: A single unified interface with optional fields (loses type safety — rejected).
+
+### Exception field specifics
+- **Decision**: `DeliveryExceptionCreate` = `subscription_id, exception_type, start_date, end_date?, reason?` — `end_date` and `reason` are optional. `exception_type` constrained to `VACATION | NO_MILK | HOLIDAY` (constant `EXCEPTION_TYPES` already in `lib/constants.ts`). Update adds optional `status`.
+- **Rationale**: Verified against `app/schemas/delivery_exception.py`. Earlier draft marked `end_date`/`reason` required — corrected.
+
+### Filtering strategy
+- **Decision**: Customer filter on subscriptions uses the dedicated `GET /subscriptions/customer/{id}`; subscription filter on exceptions uses `GET /delivery-exceptions/subscription/{id}`. Route-level filtering is client-side (filter on `route_name` field) because backend list endpoints accept no query params.
+- **Rationale**: Backend provides only these two filtered endpoints. Spec risk table row 2 ("backend lacks some filtering") applies; documented as a backend gap for future enhancement.
+- **Alternatives considered**: Adding backend query params (out of Phase 3 scope — no backend changes in this phase).

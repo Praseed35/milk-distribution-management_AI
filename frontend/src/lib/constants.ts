@@ -19,6 +19,12 @@ export const PAYMENT_STATUS = {
   PENDING: { label: "Pending", color: "slate" },
 } as const;
 
+export const BOOK_ISSUE_STATUS = {
+  WAITING: { label: "Waiting", color: "amber" },
+  ACTIVE: { label: "Active", color: "emerald" },
+  COMPLETED: { label: "Completed", color: "indigo" },
+} as const;
+
 export const RECONCILIATION_STATUS = {
   BALANCED: { label: "Balanced", color: "emerald" },
   UNBALANCED: { label: "Unbalanced", color: "red" },
@@ -29,6 +35,7 @@ export const STATUS_BADGE_MAP: Record<string, { label: string; color: string }> 
   ...SESSION_STATUS,
   ...DELIVERY_STATUS,
   ...PAYMENT_STATUS,
+  ...BOOK_ISSUE_STATUS,
   ...RECONCILIATION_STATUS,
   ACTIVE: { label: "Active", color: "emerald" },
   INACTIVE: { label: "Inactive", color: "slate" },

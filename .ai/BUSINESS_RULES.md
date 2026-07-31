@@ -182,7 +182,7 @@ A milk distribution business delivers milk to customers on fixed routes. Custome
 3. **Reopening** changes session status from CLOSED to COMPLETED
 4. **Token sheet return**: When undoing a delivery, the token sheet is returned to the customer (book.current_sheet decremented)
 5. **Edit history** is available via `GET /deliveries/session/{session_id}/edit-history`
-6. **Authentication note**: `delivery_edit.py` currently hardcodes `user_id=1` instead of using authenticated user (**BUG**)
+6. **Authentication**: `edit_delivery` and `reopen_session` require an authenticated user (`get_current_user`); the user id is recorded in the `session_edits` audit trail. (Previously hardcoded `user_id=1` — **FIXED July 29, 2026**)
 
 ## 17. Soft Delete Pattern
 
@@ -195,3 +195,34 @@ All entities use soft delete:
    - DeliveryException -> "CANCELLED"
 5. Records are never physically deleted from the database
 6. **Exception**: `session_edits` table has NO is_active — it's an immutable audit trail
+
+## 18. Customer Payment Rules (Sprint 6)
+
+1. **Valid payment modes**: CASH, UPI, CARD, CHEQUE, BANK_TRANSFER
+2. **Valid payment types**: ADVANCE or BILL_PAYMENT
+3. **Active customer required**: Cannot create a payment for an inactive/missing customer
+4. **BILL_PAYMENT requires a bill**: `bill_id` is mandatory; the bill must exist, be active, not CANCELLED (`BillAlreadyCancelledError`), and not PAID (`BillAlreadyPaidError`)
+5. **ADVANCE payments** are never linked to a bill (`bill_id` forced to None)
+6. **Auto recalculation**: Creating/updating/deactivating a BILL_PAYMENT recalculates its bill:
+   - `paid_amount` = sum of active payments on the bill
+   - `balance_amount` = `total_amount - paid_amount`
+   - status auto-set: PAID if balance <= 0, PARTIAL if paid > 0, else PENDING
+7. **Deactivation**: DELETE soft-deletes the payment (`is_active=False`) and recalculates the linked bill
+8. **Filtering**: List endpoint supports filters by customer_id, payment_mode, payment_type, from_date, to_date
+
+## 19. Customer Bill Rules (Sprint 6)
+
+1. **Bill generation** aggregates daily deliveries for a customer where `delivery_status` in (DELIVERED, CASH_SALE) and the session's `delivery_date` is within `bill_period_start`..`bill_period_end`
+2. **Line items**: Grouped by milk_type_id; each `CustomerBillItem` has quantity, unit_price (from the milk type's current `unit_price`), and amount
+3. **Total**: `total_amount` = sum of all line-item amounts
+4. **No deliveries in period**: Raises `NoDeliveriesForBillError` — a bill cannot be generated for an empty period
+5. **Initial state**: `status="PENDING"`, `paid_amount=0`, `balance_amount=total_amount`
+6. **Valid bill statuses**: PENDING, PARTIAL, PAID, OVERDUE, CANCELLED (status can be set explicitly via update endpoint; PAID/PARTIAL/PENDING are also auto-derived from payments)
+7. **Outstanding balance**: `balance = sum(billed for PENDING/PARTIAL/OVERDUE bills) - sum(all active payments)`; response also includes last bill date and last payment date
+
+## 20. Report & Analytics Rules (Sprint 7)
+
+1. **Report types**: route-wise (daily/weekly/monthly), customer consumption, revenue, collection efficiency, token book utilization, operational dashboard
+2. **Response envelope**: `{data, total, page, page_size, generated_at}`; `?format=csv` returns CSV instead of JSON
+3. **Caching**: In-memory cache keyed by report parameters; cache-busting via `?refresh=true`
+4. **RBAC**: Report endpoints use `require_role` per endpoint — e.g., route-delivery requires OWNER; collection-efficiency and token-utilization allow OWNER/ADMIN; customer-consumption allows OWNER/ADMIN/CHECKER; the operational dashboard is the most permissive (includes DELIVERY_PARTNER)

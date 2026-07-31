@@ -8,6 +8,7 @@ from app.models.customer import Customer
 from app.models.milk_type import MilkType
 from app.models.employee import Employee
 from app.models.subscription import Subscription
+from app.models.delivery_exception import DeliveryException
 
 
 def seed():
@@ -437,6 +438,116 @@ def seed():
             print(f"Seeded {len(new_subs)} new subscriptions (skipped {len(subscriptions) - len(new_subs)} existing)")
         else:
             print("All subscriptions already exist, skipping")
+
+        customer_map = {c.customer_code: c.id for c in db.query(Customer).all()}
+        milk_map = {m.milk_name: m.id for m in db.query(MilkType).all()}
+
+        additional_subs = [
+            ("C00006", "Buffalo Milk", 1, 1, "Anjali - Buffalo Milk"),
+            ("C00007", "Full Cream Milk", 2, 2, "Ravi - Full Cream Milk"),
+            ("C00008", "Toned Milk", 1, 0, "Meera - Toned Milk"),
+            ("C00009", "Standard Milk", 3, 2, "Suresh - Standard Milk"),
+            ("C00010", "Organic Milk", 1, 1, "Deepa - Organic Milk"),
+            ("C00011", "Small Pack Milk", 2, 1, "Karthik - Small Pack"),
+            ("C00012", "Double Toned Milk", 1, 1, "Lakshmi - Double Toned"),
+            ("C00013", "Buffalo Milk", 2, 0, "Arjun - Buffalo Milk"),
+            ("C00014", "Organic Milk", 1, 2, "Neha - Organic Milk"),
+            ("C00015", "Full Cream Milk", 2, 2, "Rahul - Full Cream Milk"),
+        ]
+
+        existing_sub_keys = {
+            (s.customer_id, s.milk_type_id)
+            for s in db.query(Subscription).filter(Subscription.is_active == True).all()
+        }
+
+        new_add_subs = []
+        for customer_code, milk_name, morning, evening, remarks in additional_subs:
+            customer_id = customer_map.get(customer_code)
+            milk_type_id = milk_map.get(milk_name)
+            if not customer_id or not milk_type_id:
+                continue
+            if (customer_id, milk_type_id) in existing_sub_keys:
+                continue
+            new_add_subs.append(
+                Subscription(
+                    customer_id=customer_id,
+                    milk_type_id=milk_type_id,
+                    morning_quantity=morning,
+                    evening_quantity=evening,
+                    status="ACTIVE",
+                    remarks=remarks,
+                    is_active=True
+                )
+            )
+
+        if new_add_subs:
+            db.add_all(new_add_subs)
+            db.commit()
+            print(f"Seeded {len(new_add_subs)} additional subscriptions")
+        else:
+            print("All additional subscriptions already exist, skipping")
+
+        from datetime import datetime, timedelta
+
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+        exception_seeds = [
+            ("C00001", "VACATION", None, today, today + timedelta(days=2), "Family trip"),
+            ("C00002", "NO_MILK", "MORNING", today + timedelta(days=3), today + timedelta(days=5), "Supplier delay"),
+            ("C00003", "HOLIDAY", "EVENING", today + timedelta(days=3), today + timedelta(days=5), "Festival evening"),
+            ("C00004", "VACATION", None, today + timedelta(days=7), today + timedelta(days=10), "Vacation"),
+        ]
+
+        seeded_exceptions = 0
+        for customer_code, exception_type, shift, start_date, end_date, reason in exception_seeds:
+            customer_id = customer_map.get(customer_code)
+            if not customer_id:
+                continue
+            subscription = (
+                db.query(Subscription)
+                .filter(
+                    Subscription.customer_id == customer_id,
+                    Subscription.is_active == True
+                )
+                .first()
+            )
+            if not subscription:
+                continue
+
+            existing_exception = (
+                db.query(DeliveryException)
+                .filter(
+                    DeliveryException.subscription_id == subscription.id,
+                    DeliveryException.exception_type == exception_type,
+                    DeliveryException.start_date == start_date,
+                    DeliveryException.shift.is_(None)
+                    if shift is None
+                    else DeliveryException.shift == shift,
+                )
+                .first()
+            )
+            if existing_exception:
+                continue
+
+            db.add(
+                DeliveryException(
+                    subscription_id=subscription.id,
+                    exception_type=exception_type,
+                    shift=shift,
+                    start_date=start_date,
+                    end_date=end_date,
+                    reason=reason,
+                    status="ACTIVE",
+                    is_active=True
+                )
+            )
+            seeded_exceptions += 1
+
+        if seeded_exceptions:
+            db.commit()
+            print(f"Seeded {seeded_exceptions} new delivery exceptions")
+        else:
+            print("All delivery exceptions already exist, skipping")
 
         print("\nSeed completed successfully!")
         print("\nTest credentials:")

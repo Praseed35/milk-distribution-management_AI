@@ -56,6 +56,156 @@ class TestCreateDeliveryException:
         assert data["end_date"] is None
         assert data["exception_type"] == "NO_MILK"
 
+    def test_create_delivery_exception_with_shift(
+        self,
+        client,
+        db_session,
+        seed_subscription,
+        seed_delivery_exception
+    ):
+        exception_data = {
+            "subscription_id": seed_subscription.id,
+            "exception_type": "VACATION",
+            "shift": "MORNING",
+            "start_date": datetime(2026, 12, 10).isoformat(),
+            "end_date": datetime(2026, 12, 12).isoformat()
+        }
+
+        response = client.post(
+            "/delivery-exceptions/",
+            json=exception_data
+        )
+
+        assert response.status_code == 201
+        assert response.json()["shift"] == "MORNING"
+
+    def test_create_delivery_exception_invalid_shift(
+        self,
+        client,
+        db_session,
+        seed_subscription,
+        seed_delivery_exception
+    ):
+        exception_data = {
+            "subscription_id": seed_subscription.id,
+            "exception_type": "VACATION",
+            "shift": "NOON",
+            "start_date": datetime(2026, 12, 20).isoformat()
+        }
+
+        response = client.post(
+            "/delivery-exceptions/",
+            json=exception_data
+        )
+
+        assert response.status_code == 422
+
+    def test_create_delivery_exception_overlaps_whole_day(
+        self,
+        client,
+        db_session,
+        seed_subscription,
+        seed_delivery_exception
+    ):
+        exception_data = {
+            "subscription_id": seed_subscription.id,
+            "exception_type": "VACATION",
+            "shift": "MORNING",
+            "start_date": datetime(2026, 8, 3).isoformat(),
+            "end_date": datetime(2026, 8, 7).isoformat()
+        }
+
+        response = client.post(
+            "/delivery-exceptions/",
+            json=exception_data
+        )
+
+        assert response.status_code == 400
+
+    def test_create_delivery_exception_whole_day_overlaps_shift(
+        self,
+        client,
+        db_session,
+        seed_subscription,
+        seed_delivery_exception
+    ):
+        exception_data = {
+            "subscription_id": seed_subscription.id,
+            "exception_type": "VACATION",
+            "start_date": datetime(2026, 8, 3).isoformat(),
+            "end_date": datetime(2026, 8, 7).isoformat()
+        }
+
+        response = client.post(
+            "/delivery-exceptions/",
+            json=exception_data
+        )
+
+        assert response.status_code == 400
+
+    def test_create_delivery_exception_same_shift_overlap(
+        self,
+        client,
+        db_session,
+        seed_subscription,
+        seed_delivery_exception
+    ):
+        client.post(
+            "/delivery-exceptions/",
+            json={
+                "subscription_id": seed_subscription.id,
+                "exception_type": "VACATION",
+                "shift": "MORNING",
+                "start_date": datetime(2026, 12, 1).isoformat(),
+                "end_date": datetime(2026, 12, 5).isoformat()
+            }
+        )
+
+        response = client.post(
+            "/delivery-exceptions/",
+            json={
+                "subscription_id": seed_subscription.id,
+                "exception_type": "HOLIDAY",
+                "shift": "MORNING",
+                "start_date": datetime(2026, 12, 4).isoformat(),
+                "end_date": datetime(2026, 12, 6).isoformat()
+            }
+        )
+
+        assert response.status_code == 400
+
+    def test_create_delivery_exception_different_shifts_coexist(
+        self,
+        client,
+        db_session,
+        seed_subscription,
+        seed_delivery_exception
+    ):
+        response_morning = client.post(
+            "/delivery-exceptions/",
+            json={
+                "subscription_id": seed_subscription.id,
+                "exception_type": "VACATION",
+                "shift": "MORNING",
+                "start_date": datetime(2026, 12, 10).isoformat(),
+                "end_date": datetime(2026, 12, 12).isoformat()
+            }
+        )
+
+        response_evening = client.post(
+            "/delivery-exceptions/",
+            json={
+                "subscription_id": seed_subscription.id,
+                "exception_type": "HOLIDAY",
+                "shift": "EVENING",
+                "start_date": datetime(2026, 12, 11).isoformat(),
+                "end_date": datetime(2026, 12, 12).isoformat()
+            }
+        )
+
+        assert response_morning.status_code == 201
+        assert response_evening.status_code == 201
+
     def test_create_delivery_exception_inactive_subscription(
         self,
         client,
@@ -236,6 +386,7 @@ class TestGetAllDeliveryExceptions:
         assert "customer_name" in first
         assert "route_name" in first
         assert "exception_type" in first
+        assert "shift" in first
         assert "start_date" in first
         assert "is_active" in first
 
@@ -258,6 +409,7 @@ class TestGetDeliveryExceptionById:
         assert data["id"] == seed_delivery_exception.id
         assert data["exception_type"] == "VACATION"
         assert data["reason"] == "Family vacation"
+        assert "shift" in data
         assert "subscription" in data
         assert "customer" in data["subscription"]
 
@@ -367,6 +519,84 @@ class TestUpdateDeliveryException:
 
         assert response.status_code == 200
         assert response.json()["status"] == "COMPLETED"
+
+    def test_update_shift(
+        self,
+        client,
+        db_session,
+        seed_subscription,
+        seed_delivery_exception
+    ):
+        response = client.put(
+            f"/delivery-exceptions/{seed_delivery_exception.id}",
+            json={"shift": "EVENING"}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["shift"] == "EVENING"
+
+    def test_update_shift_clear_to_whole_day(
+        self,
+        client,
+        db_session,
+        seed_subscription,
+        seed_delivery_exception
+    ):
+        from app.models.delivery_exception import DeliveryException
+
+        seed_delivery_exception.shift = "MORNING"
+        db_session.commit()
+
+        response = client.put(
+            f"/delivery-exceptions/{seed_delivery_exception.id}",
+            json={"shift": None}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["shift"] is None
+
+    def test_update_shift_overlap(
+        self,
+        client,
+        db_session,
+        seed_subscription,
+        seed_delivery_exception
+    ):
+        from app.models.delivery_exception import DeliveryException
+
+        first = DeliveryException(
+            subscription_id=seed_subscription.id,
+            exception_type="HOLIDAY",
+            shift="MORNING",
+            start_date=datetime(2026, 9, 1),
+            end_date=datetime(2026, 9, 5),
+            status="ACTIVE",
+            is_active=True
+        )
+        db_session.add(first)
+        second = DeliveryException(
+            subscription_id=seed_subscription.id,
+            exception_type="VACATION",
+            shift="MORNING",
+            start_date=datetime(2026, 9, 2),
+            end_date=datetime(2026, 9, 4),
+            status="ACTIVE",
+            is_active=True
+        )
+        db_session.add(second)
+        db_session.commit()
+        db_session.refresh(first)
+        db_session.refresh(second)
+
+        response = client.put(
+            f"/delivery-exceptions/{second.id}",
+            json={
+                "start_date": datetime(2026, 9, 1).isoformat(),
+                "end_date": datetime(2026, 9, 3).isoformat()
+            }
+        )
+
+        assert response.status_code == 400
 
     def test_update_not_found(
         self,

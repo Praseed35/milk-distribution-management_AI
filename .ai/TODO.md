@@ -4,13 +4,14 @@
 
 ---
 
-## Current State (Actual — July 29, 2026 — After Sprint 6)
+## Current State (Actual — July 31, 2026)
 
-**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments)
-**Tested Code**: All Sprints 1–6 ✅
+**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments), 7 (reports)
+**Tested Code**: All Sprints 1–7 ✅
+**Frontend**: Sprint 9 in progress — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) complete; Phases 3–8 pending
 **Untested Code**: None
 **Total Tables**: 17
-**Total API Endpoints**: ~78
+**Total API Endpoints**: ~84
 **Known Bugs**: 0
 
 ---
@@ -89,12 +90,14 @@
 - [x] Outstanding balance tracking (billed vs paid vs balance)
 - [x] Payment collection by delivery partner (collected_by field)
 
-### Sprint 7: Reports and Analytics (NOT STARTED)
-- [ ] Route-wise daily/weekly/monthly reports
-- [ ] Customer-wise consumption reports
-- [ ] Revenue reports
-- [ ] Collection efficiency reports
-- [ ] Token book utilization reports
+### Sprint 7: Reports and Analytics (COMPLETED ✅, TESTED ✅)
+- [x] Route-wise daily/weekly/monthly reports
+- [x] Customer-wise consumption reports
+- [x] Revenue reports
+- [x] Collection efficiency reports
+- [x] Token book utilization reports
+- [x] Operational dashboard
+- [x] CSV export + in-memory caching + RBAC
 
 ### Sprint 8: AI Business Intelligence (NOT STARTED)
 - [ ] Demand forecasting
@@ -102,13 +105,15 @@
 - [ ] Route optimization suggestions
 - [ ] Anomaly detection (unusual orders, payments)
 
-### Sprint 9: Frontend - React (NOT STARTED)
-- [ ] Owner dashboard
-- [ ] Customer management UI
-- [ ] Delivery partner mobile app
-- [ ] Subscription management
-- [ ] Token book tracking
-- [ ] Reports dashboard
+### Sprint 9: Frontend - React (IN PROGRESS — Phase 1 & 2 COMPLETE ✅)
+- [x] Phase 1: Backend prep (CORS, /api/v1 prefix, health) + frontend scaffold + auth + layout
+- [x] Phase 2: Master Data CRUD (routes, customers, milk types, employees, users)
+- [ ] Phase 3: Subscriptions & Exceptions pages
+- [ ] Phase 4: Token book pages
+- [ ] Phase 5: Delivery management pages (session lifecycle, registration, reconciliation)
+- [ ] Phase 6: Payment pages
+- [ ] Phase 7: Report pages
+- [ ] Phase 8: Polish & testing
 
 ### Sprint 10: Testing and Deployment (NOT STARTED)
 - [ ] Comprehensive test coverage (target: 95%+)
@@ -135,9 +140,12 @@
 
 ## Immediate Next Steps (Priority Order)
 
-1. **🟠 HIGH**: Sprint 7 — Reports & Analytics (route-wise, revenue, collection efficiency reports)
-2. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
-3. **🟡 MEDIUM**: Add CORS middleware for frontend readiness
-4. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
-5. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
-6. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)
+1. **🔴 HIGH**: Frontend Phase 3 — Subscriptions & Exceptions pages (T070-T083 in `specs/004-react-frontend/tasks.md`)
+2. **🔴 HIGH**: Frontend Phase 4 — Token Books pages (T084-T099)
+3. **🔴 HIGH**: Frontend Phase 5 — Delivery Management pages (T100-T122) — highest operational value
+4. **🟡 MEDIUM**: Frontend Phase 6 — Payments pages (T123-T131)
+5. **🟡 MEDIUM**: Frontend Phase 7 — Reports pages (T132-T146)
+6. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
+7. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
+8. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
+9. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)

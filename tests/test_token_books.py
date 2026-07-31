@@ -72,6 +72,74 @@ class TestCreateTokenIdentity:
 
         assert response.status_code == 201
 
+    def test_create_token_identity_same_token_different_customer(
+        self,
+        client,
+        db_session,
+        seed_route,
+        seed_customer,
+        seed_milk_type,
+        seed_token_identity
+    ):
+        from app.models.customer import Customer
+
+        other_customer = Customer(
+            customer_code="C00002",
+            customer_name="Jane Doe",
+            primary_phone="9123456780",
+            route_id=seed_route.id,
+            is_active=True
+        )
+        db_session.add(other_customer)
+        db_session.commit()
+        db_session.refresh(other_customer)
+
+        identity_data = {
+            "customer_id": other_customer.id,
+            "milk_type_id": seed_milk_type.id,
+            "token_number": 1001
+        }
+
+        response = client.post(
+            "/token-books/identities/",
+            json=identity_data
+        )
+
+        assert response.status_code == 400
+
+    def test_create_token_identity_same_customer_same_token_different_milk_type(
+        self,
+        client,
+        db_session,
+        seed_customer,
+        seed_milk_type,
+        seed_token_identity
+    ):
+        from app.models.milk_type import MilkType
+
+        other_milk_type = MilkType(
+            milk_name="Toned Milk",
+            volume_ml=500,
+            description="Toned dairy milk",
+            is_active=True
+        )
+        db_session.add(other_milk_type)
+        db_session.commit()
+        db_session.refresh(other_milk_type)
+
+        identity_data = {
+            "customer_id": seed_customer.id,
+            "milk_type_id": other_milk_type.id,
+            "token_number": 1001
+        }
+
+        response = client.post(
+            "/token-books/identities/",
+            json=identity_data
+        )
+
+        assert response.status_code == 201
+
     def test_create_token_identity_inactive_customer(
         self,
         client,
@@ -269,6 +337,46 @@ class TestUpdateTokenIdentity:
 
         response = client.put(
             f"/token-books/identities/{second.id}",
+            json={"token_number": 1001}
+        )
+
+        assert response.status_code == 400
+
+    def test_update_token_number_taken_by_other_customer(
+        self,
+        client,
+        db_session,
+        seed_route,
+        seed_customer,
+        seed_milk_type,
+        seed_token_identity
+    ):
+        from app.models.customer import Customer
+        from app.models.token_identity import TokenIdentity
+
+        other_customer = Customer(
+            customer_code="C00002",
+            customer_name="Jane Doe",
+            primary_phone="9123456780",
+            route_id=seed_route.id,
+            is_active=True
+        )
+        db_session.add(other_customer)
+        db_session.commit()
+        db_session.refresh(other_customer)
+
+        other = TokenIdentity(
+            customer_id=other_customer.id,
+            milk_type_id=seed_milk_type.id,
+            token_number=5555,
+            is_active=True
+        )
+        db_session.add(other)
+        db_session.commit()
+        db_session.refresh(other)
+
+        response = client.put(
+            f"/token-books/identities/{other.id}",
             json={"token_number": 1001}
         )
 

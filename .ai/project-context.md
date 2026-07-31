@@ -1,5 +1,7 @@
 # PROJECT_CONTEXT.md - Milk Management ERP Backend
 
+> **DEPRECATED — SUPERSEDED.** This is an older snapshot of the project context (says 8 migrations, ~218 tests, no delivery/payment/report modules). The canonical, up-to-date project memory is **`PROJECT_CONTEXT.md`** (12 migrations, 343 tests, 17 tables, 13 routers, Sprint 9 frontend in progress). Keep this file only as historical reference.
+
 > Primary project memory for AI assistants. Read this first.
 
 ---

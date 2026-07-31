@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.customer import Customer
@@ -30,6 +31,7 @@ def _check_overlap(
     subscription_id: int,
     start_date: datetime,
     end_date: datetime | None,
+    shift: str | None = None,
     exclude_id: int | None = None
 ):
 
@@ -41,6 +43,14 @@ def _check_overlap(
             DeliveryException.start_date <= (end_date or start_date),
         )
     )
+
+    if shift:
+        query = query.filter(
+            or_(
+                DeliveryException.shift.is_(None),
+                DeliveryException.shift == shift
+            )
+        )
 
     if end_date:
         query = query.filter(
@@ -87,7 +97,8 @@ def create(
         db,
         exception.subscription_id,
         exception.start_date,
-        exception.end_date
+        exception.end_date,
+        shift=exception.shift
     )
 
     if existing:
@@ -100,6 +111,7 @@ def create(
     new_exception = DeliveryException(
         subscription_id=exception.subscription_id,
         exception_type=exception.exception_type,
+        shift=exception.shift,
         start_date=exception.start_date,
         end_date=exception.end_date,
         reason=exception.reason
@@ -125,6 +137,7 @@ def get_all(
             Customer.customer_name,
             Route.route_name,
             DeliveryException.exception_type,
+            DeliveryException.shift,
             DeliveryException.start_date,
             DeliveryException.end_date,
             DeliveryException.status,
@@ -157,6 +170,7 @@ def get_by_id(
             Subscription.morning_quantity,
             Subscription.evening_quantity,
             DeliveryException.exception_type,
+            DeliveryException.shift,
             DeliveryException.start_date,
             DeliveryException.end_date,
             DeliveryException.reason,
@@ -191,6 +205,7 @@ def get_by_id(
             'evening_quantity': result.evening_quantity
         },
         'exception_type': result.exception_type,
+        'shift': result.shift,
         'start_date': result.start_date,
         'end_date': result.end_date,
         'reason': result.reason,
@@ -251,6 +266,9 @@ def update_by_id(
     if exception.exception_type is not None:
         exception_to_update.exception_type = exception.exception_type
 
+    if "shift" in exception.model_fields_set:
+        exception_to_update.shift = exception.shift
+
     if exception.start_date is not None:
         exception_to_update.start_date = exception.start_date
 
@@ -272,6 +290,7 @@ def update_by_id(
         exception_to_update.subscription_id,
         exception_to_update.start_date,
         exception_to_update.end_date,
+        shift=exception_to_update.shift,
         exclude_id=exception_id
     )
 

@@ -10,14 +10,19 @@
 
 ```python
 app = FastAPI()
-# 13 routers registered (line 30-40):
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], ...)
+api_v1 = APIRouter(prefix="/api/v1")
+# 13 routers registered under api_v1 (and again at root level for legacy compat):
 #   user, auth, route, customer, milk_type, subscription,
 #   employee, delivery_exception, token_book, deliveries,
 #   delivery_edit, payments, reports
-# GET "/" returns {"message": "Milk Management API"}
+# GET /api/v1/health -> {"status": "ok", "version": "1.0.0", "timestamp": ...}
+# GET / -> {"message": "Milk Management API"}
 ```
 
-The app is a standard FastAPI application with no middleware, no CORS, no startup/shutdown events. All routers are registered at module level via `app.include_router()`.
+The app is a standard FastAPI application with **CORS middleware** (allows `http://localhost:5173`), **no startup/shutdown events**, and **no global exception handlers**. All routers are registered twice:
+1. Under the `api_v1` umbrella router with prefix `/api/v1` (primary, used by the React frontend)
+2. At root level (legacy, deprecated — kept for backward compatibility with existing scripts)
 
 **Delivery routers**:
 - `deliveries` (prefix `/deliveries/sessions`) — session lifecycle + reconciliation
@@ -307,7 +312,7 @@ All models inherit from `Base`. Alembic uses `Base.metadata` for migration gener
 
 ## 9. Migration History
 
-9 migrations in chronological order:
+12 migrations in chronological order:
 
 | Migration | Description |
 |-----------|-------------|
@@ -318,8 +323,11 @@ All models inherit from `Base`. Alembic uses `Base.metadata` for migration gener
 | `2a032b2352b4` | Add subscriptions table |
 | `3f8a1b2c4d5e` | Create delivery_exceptions table |
 | `4e5f6a7b8c9d` | Create token_books tables (3 tables) |
-| **`5a6b7c8d9e0f`** | **Create delivery tables (delivery_sessions, daily_deliveries, session_edits, token_sheet_warnings)** |
+| `5a6b7c8d9e0f` | Create delivery tables (delivery_sessions, daily_deliveries, session_edits, token_sheet_warnings) |
 | `1154a3a25414` | Remove is_active in update customer (EMPTY — no upgrade/downgrade logic) |
+| `aeecd8f99d6d` | Merge token_books and delivery heads |
+| `6a0f9777a5cb` | Add payment management tables (customer_bills, customer_bill_items, customer_payments) |
+| `119aa199d5d7` | Add report indexes |
 
 ---
 
@@ -423,11 +431,11 @@ Used in schema validation patterns but not enforced as DB constraint.
 
 ## 13. Frontend Readiness
 
-**Current state**: Backend only. No CORS configured. No OpenAPI customization.
+**Current state**: Backend is ready for frontend integration. CORS is configured for `http://localhost:5173`, API prefix `/api/v1` is active with `GET /api/v1/health`, and legacy root routes are kept for backward compatibility. The React frontend is under active development (`frontend/`) — Phase 1 (Setup/Auth/Layout) and Phase 2 (Master Data CRUD) are complete; Phases 3–8 (Subscriptions, Token Books, Delivery, Payments, Reports, Polish) are pending.
 
-**For future React frontend**:
-- CORS middleware needed in `main.py`
-- API prefix (`/api/v1`) should be added
+**Remaining backend gaps for production**:
+- SECRET_KEY should move to environment variable
 - Rate limiting not implemented
 - No WebSocket support
 - No file upload support
+- No global exception handlers / request logging middleware

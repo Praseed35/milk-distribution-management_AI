@@ -154,26 +154,26 @@ description: "Task list for React Frontend feature implementation"
 
 ### Subscriptions (US-020)
 
-- [ ] T070 Create `frontend/src/types/subscription.ts` with `SubscriptionCreate`, `SubscriptionUpdate`, `SubscriptionResponse` interfaces
-- [ ] T071 Create `frontend/src/api/subscriptions.ts` with CRUD + customer filter API functions
-- [ ] T072 Create `frontend/src/hooks/useSubscriptions.ts` with TanStack Query hooks
-- [ ] T073 Create `frontend/src/pages/subscriptions/SubscriptionListPage.tsx` with customer/route filter
-- [ ] T074 Create `frontend/src/pages/subscriptions/SubscriptionFormPage.tsx` with customer dropdown, milk type dropdown, morning/evening fields
-- [ ] T075 Register `/subscriptions`, `/subscriptions/new`, `/subscriptions/:id/edit` in App.tsx with OWNER/ADMIN guard
+- [X] T070 Create `frontend/src/types/subscription.ts` with `SubscriptionCreate`, `SubscriptionUpdate`, `SubscriptionResponse` interfaces
+- [X] T071 Create `frontend/src/api/subscriptions.ts` with CRUD + customer filter API functions
+- [X] T072 Create `frontend/src/hooks/useSubscriptions.ts` with TanStack Query hooks
+- [X] T073 Create `frontend/src/pages/subscriptions/SubscriptionListPage.tsx` with customer/route filter
+- [X] T074 Create `frontend/src/pages/subscriptions/SubscriptionFormPage.tsx` with customer dropdown, milk type dropdown, morning/evening fields
+- [X] T075 Register `/subscriptions`, `/subscriptions/new`, `/subscriptions/:id/edit` in App.tsx with OWNER/ADMIN guard
 
 ### Delivery Exceptions (US-021)
 
-- [ ] T076 Create `frontend/src/types/delivery-exception.ts` with `DeliveryExceptionCreate`, `DeliveryExceptionUpdate`, `DeliveryExceptionResponse` interfaces
-- [ ] T077 Create `frontend/src/api/delivery-exceptions.ts` with CRUD + subscription filter API functions
-- [ ] T078 Create `frontend/src/hooks/useDeliveryExceptions.ts` with TanStack Query hooks
-- [ ] T079 Create `frontend/src/pages/delivery-exceptions/ExceptionListPage.tsx` with subscription/customer filter
-- [ ] T080 Create `frontend/src/pages/delivery-exceptions/ExceptionFormPage.tsx` with subscription selector, exception type dropdown, date range picker
-- [ ] T081 Register `/delivery-exceptions`, `/delivery-exceptions/new` in App.tsx with OWNER/ADMIN guard
+- [X] T076 Create `frontend/src/types/delivery-exception.ts` with `DeliveryExceptionCreate`, `DeliveryExceptionUpdate`, `DeliveryExceptionResponse` interfaces
+- [X] T077 Create `frontend/src/api/delivery-exceptions.ts` with CRUD + subscription filter API functions
+- [X] T078 Create `frontend/src/hooks/useDeliveryExceptions.ts` with TanStack Query hooks
+- [X] T079 Create `frontend/src/pages/delivery-exceptions/ExceptionListPage.tsx` with subscription/customer filter
+- [X] T080 Create `frontend/src/pages/delivery-exceptions/ExceptionFormPage.tsx` with subscription selector, exception type dropdown, date range picker
+- [X] T081 Register `/delivery-exceptions`, `/delivery-exceptions/new` in App.tsx with OWNER/ADMIN guard
 
 ### Read-Only Checker View (US-022)
 
-- [ ] T082 Add CHECKER role to route guards for subscription/exception list pages (read-only, no create/edit buttons)
-- [ ] T083 Conditionally hide create/edit buttons and form access based on user role in subscription/exception list pages
+- [X] T082 Add CHECKER role to route guards for subscription/exception list pages (read-only, no create/edit buttons)
+- [X] T083 Conditionally hide create/edit buttons and form access based on user role in subscription/exception list pages
 
 **Checkpoint**: Subscriptions and exceptions fully manageable. Checker can view but not edit.
 
@@ -185,31 +185,31 @@ description: "Task list for React Frontend feature implementation"
 
 ### Token Identities (US-030)
 
-- [ ] T084 Create `frontend/src/types/token-identity.ts` with `TokenIdentityCreate`, `TokenIdentityUpdate`, `TokenIdentityResponse` interfaces
-- [ ] T085 Create `frontend/src/api/token-books.ts` with identity CRUD API functions
-- [ ] T086 Create `frontend/src/pages/token-books/TokenIdentityListPage.tsx` with customer/milk-type filter
-- [ ] T087 Create `frontend/src/pages/token-books/TokenIdentityFormPage.tsx` with customer/milk-type dropdowns
-- [ ] T088 Register `/token-identities`, `/token-identities/new` in App.tsx
+- [X] T084 Create `frontend/src/types/token-identity.ts` with `TokenIdentityCreate`, `TokenIdentityUpdate`, `TokenIdentityResponse` interfaces
+- [X] T085 Create `frontend/src/api/token-books.ts` with identity CRUD API functions
+- [X] T086 Create `frontend/src/pages/token-books/TokenIdentityListPage.tsx` with customer/milk-type filter
+- [X] T087 Create `frontend/src/pages/token-books/TokenIdentityFormPage.tsx` with customer/milk-type dropdowns
+- [X] T088 Register `/token-identities`, `/token-identities/new` in App.tsx
 
 ### Token Book Issues (US-031)
 
-- [ ] T089 Create `frontend/src/types/token-book.ts` with `TokenBookIssueCreate`, `TokenBookIssueResponse` interfaces
-- [ ] T090 Add issue CRUD API functions to `frontend/src/api/token-books.ts`
-- [ ] T091 Create `frontend/src/pages/token-books/TokenBookIssueListPage.tsx` with identity/customer filter
-- [ ] T092 Create `frontend/src/pages/token-books/TokenBookIssueFormPage.tsx` with identity selector, sheet count, issue date
-- [ ] T093 Register `/token-book-issues`, `/token-book-issues/new` in App.tsx
+- [X] T089 Create `frontend/src/types/token-book.ts` with `TokenBookIssueCreate`, `TokenBookIssueResponse` interfaces
+- [X] T090 Add issue CRUD API functions to `frontend/src/api/token-books.ts`
+- [X] T091 Create `frontend/src/pages/token-books/TokenBookIssueListPage.tsx` with identity/customer filter
+- [X] T092 Create `frontend/src/pages/token-books/TokenBookIssueFormPage.tsx` with identity selector, sheet count, issue date
+- [X] T093 Register `/token-book-issues`, `/token-book-issues/new` in App.tsx
 
 ### Token Book Payments (US-032)
 
-- [ ] T094 Add `TokenBookPaymentCreate`, `TokenBookPaymentResponse` types to `frontend/src/types/token-book.ts`
-- [ ] T095 Add payment CRUD API functions to `frontend/src/api/token-books.ts`
-- [ ] T096 Create `frontend/src/pages/token-books/TokenBookPaymentListPage.tsx` with issue filter
-- [ ] T097 Create `frontend/src/pages/token-books/TokenBookPaymentFormPage.tsx` with book price, amount paid, payment mode dropdown
-- [ ] T098 Register `/token-book-payments`, `/token-book-payments/new` in App.tsx
+- [X] T094 Add `TokenBookPaymentCreate`, `TokenBookPaymentResponse` types to `frontend/src/types/token-book.ts`
+- [X] T095 Add payment CRUD API functions to `frontend/src/api/token-books.ts`
+- [X] T096 Create `frontend/src/pages/token-books/TokenBookPaymentListPage.tsx` with issue filter
+- [X] T097 Create `frontend/src/pages/token-books/TokenBookPaymentFormPage.tsx` with book price, amount paid, payment mode dropdown
+- [X] T098 Register `/token-book-payments`, `/token-book-payments/new` in App.tsx
 
 ### Checker View (US-033)
 
-- [ ] T099 Add CHECKER read-only access to token book list pages (view only, no create/edit)
+- [X] T099 Add CHECKER read-only access to token book list pages (view only, no create/edit)
 
 **Checkpoint**: Token identities, issues, and payments fully manageable.
 

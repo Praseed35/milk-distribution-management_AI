@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 
+from app.constants.shifts import Shift
 from app.schemas.customer import CustomerSummaryResponse
 
 
@@ -35,6 +36,10 @@ class DeliveryExceptionBase(BaseModel):
         max_length=20
     )
 
+    shift: Shift | None = Field(
+        default=None
+    )
+
     start_date: datetime
 
     end_date: datetime | None = Field(
@@ -57,6 +62,10 @@ class DeliveryExceptionUpdate(BaseModel):
     exception_type: str | None = Field(
         default=None,
         max_length=20
+    )
+
+    shift: Shift | None = Field(
+        default=None
     )
 
     start_date: datetime | None = Field(
@@ -111,6 +120,8 @@ class DeliveryExceptionListResponse(BaseModel):
 
     exception_type: str
 
+    shift: str | None
+
     start_date: datetime
 
     end_date: datetime | None
@@ -131,6 +142,8 @@ class DeliveryExceptionDetailResponse(BaseModel):
     subscription: SubscriptionSummaryResponse
 
     exception_type: str
+
+    shift: str | None
 
     start_date: datetime
 

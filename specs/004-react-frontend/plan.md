@@ -2,7 +2,7 @@
 
 **Branch**: `004-react-frontend` | **Date**: 2026-07-31 | **Spec**: `specs/004-react-frontend/spec.md`
 
-**Implementation Status**: ✅ Phase 1 (Setup + Auth + Layout) complete | ✅ Phase 2 (Master Data CRUD) complete | ⏳ Phase 3 (Subscription & Exceptions) — next
+**Implementation Status**: ✅ Phase 1 (Setup + Auth + Layout) complete | ✅ Phase 2 (Master Data CRUD) complete | ✅ Phase 3 (Subscriptions & Exceptions) complete — T070–T083 implemented via `specs/005-subscription-exceptions` (T001–T023) | ✅ Phase 4 (Token Books) complete — T084–T099 implemented via `specs/006-token-books` (T001–T032) | ⏸ Phases 5–8 — not started
 
 **Input**: Feature specification from `/specs/004-react-frontend/spec.md`
 
@@ -12,9 +12,9 @@ Add a modern React SPA frontend to the existing FastAPI ERP backend. The fronten
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x, React 18.x
+**Language/Version**: TypeScript 6.x, React 19.x (verified from `frontend/package.json`)
 
-**Primary Dependencies**: Vite 5, React Router v6, Axios, TanStack Query (React Query v5), Tailwind CSS 3, react-hot-toast
+**Primary Dependencies**: Vite 8, React Router v7 (v6-style `Routes`/`Route` API), Axios, TanStack Query (React Query v5), Tailwind CSS 4 (`@tailwindcss/vite`), react-hot-toast, @sentry/react, oxlint
 
 **Storage**: N/A (frontend only — all data via API calls to backend)
 
@@ -29,6 +29,14 @@ Add a modern React SPA frontend to the existing FastAPI ERP backend. The fronten
 **Constraints**: 30-min JWT token expiry (no refresh token), no offline support, no PWA
 
 **Scale/Scope**: ~80 API endpoints across 14 backend modules, ~30 page routes, role-based routing for 5 roles
+
+**Phase 3 Scope (Subscriptions & Exceptions)**: US-020, US-021, US-022 → tasks T070–T083. New files only: `types/subscription.ts`, `types/delivery-exception.ts`, `api/subscriptions.ts`, `api/delivery-exceptions.ts`, `hooks/useSubscriptions.ts`, `hooks/useDeliveryExceptions.ts`, `pages/subscriptions/*`, `pages/delivery-exceptions/*`, plus route registration in `App.tsx` with RoleGuard and read-only guards for CHECKER.
+
+**Phase 3 Unknowns (resolved in research.md)**:
+- Subscription/exception list endpoints return plain arrays (no pagination envelope).
+- Backend accepts no `start_date`/`end_date` on subscription create (auto-set server-side); response-only fields.
+- Backend provides `GET /subscriptions/customer/{id}` and `GET /delivery-exceptions/subscription/{id}` for filtering; route/customer filters done client-side.
+- Detail responses use nested objects (`customer`, `milk_type`, `subscription`); list responses use flat joined fields.
 
 ## Constitution Check
 
@@ -115,3 +123,12 @@ frontend/
 ## Complexity Tracking
 
 No constitution violations to justify. The frontend is a new project type not covered by the constitution's backend-specific rules, and all backend additions (CORS, prefix) are simple and constitutional.
+
+### Phase 3 Re-Check (post-design, 2026-07-31)
+
+- [x] **Layered Architecture**: Phase 3 keeps the established frontend layering (types → api → hooks → pages) matching Phases 1–2; no backend changes.
+- [x] **Schema-Driven Contracts**: `subscription.ts`/`delivery-exception.ts` corrected to mirror `app/schemas/subscription.py` and `app/schemas/delivery_exception.py` exactly (flat list types vs nested detail types; create/update field sets).
+- [x] **RBAC**: List routes for CHECKER (read-only); create/edit routes wrapped in `RoleGuard` with OWNER/ADMIN. Buttons conditionally hidden via `useAuth()` role check (T082–T083).
+- [x] **Soft Deletes**: List pages render `is_active` badge; DELETE uses backend soft-delete endpoints.
+- [x] **Testing**: No new backend tests (no backend change). Frontend testing remains deferred to Phase 8.
+- [x] **Security**: No new security surface; all calls go through the existing authed Axios client.

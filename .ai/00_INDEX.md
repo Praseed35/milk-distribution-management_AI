@@ -13,7 +13,7 @@
 | **`DATABASE.md`** | All **17** tables with columns, constraints, relationships | Before DB changes |
 | **`API_REFERENCE.md`** | Every endpoint with request/response schemas | Before API changes |
 | **`BUSINESS_RULES.md`** | All business domain rules enforced in code | Before feature work |
-| **`CURRENT_STATE.md`** | Quick snapshot, file counts, patterns, templates | Quick reference |
+| **`current_state.md`** | Quick snapshot, file counts, patterns, templates | Quick reference |
 
 ## Planning and Status Files
 
@@ -79,4 +79,4 @@
 
 ## Last Updated: July 31, 2026
 
-**Note**: All 14 modules (Master Data → Reports & Analytics) implemented and tested. 343 tests passing across 12 test files. See `feature_status.md` for detailed completion status.
+**Note**: All 14 modules (Master Data → Reports & Analytics) implemented and tested. 343 tests passing across 12 test files. Frontend Sprint 9 in progress — Phases 1–2 (Setup/Auth + Master Data CRUD) complete, Phases 3–8 pending. See `feature_status.md` for detailed completion status.

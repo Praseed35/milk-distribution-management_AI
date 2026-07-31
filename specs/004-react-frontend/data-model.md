@@ -198,33 +198,45 @@ export interface EmployeeResponse {
 
 ## Subscription (`subscription.ts`)
 
+> Mirrors `app/schemas/subscription.py`. Verified 2026-07-31: `start_date`/`end_date` are **response-only** — not accepted on create. List and Detail responses have different shapes; use both.
+
 ```typescript
 export interface SubscriptionCreate {
-  customer_id: number;
-  milk_type_id: number;
-  morning_quantity: number;
-  evening_quantity: number;
-  start_date: string;
-  end_date?: string;
-  remarks?: string;
+  customer_id: number;          // gt=0
+  milk_type_id: number;         // gt=0
+  morning_quantity: number;     // default 0, ge=0
+  evening_quantity: number;     // default 0, ge=0
+  status?: string;              // default "ACTIVE", max 20
+  remarks?: string | null;      // max 255
 }
 
 export interface SubscriptionUpdate {
-  morning_quantity?: number;
-  evening_quantity?: number;
-  end_date?: string;
-  status?: string;
-  remarks?: string;
+  morning_quantity?: number;    // ge=0
+  evening_quantity?: number;    // ge=0
+  status?: string;              // max 20
+  remarks?: string | null;      // max 255
 }
 
-export interface SubscriptionResponse {
+// GET /subscriptions/ and GET /subscriptions/customer/{id}
+export interface SubscriptionListResponse {
   id: number;
   customer_id: number;
-  customer_name?: string;
-  customer_code?: string;
-  route_name?: string;
-  milk_type_id: number;
-  milk_name?: string;
+  customer_code: string;
+  customer_name: string;
+  route_name: string;
+  milk_type_name: string;
+  milk_type_volume: number;
+  morning_quantity: number;
+  evening_quantity: number;
+  status: string;
+  is_active: boolean;
+}
+
+// GET /subscriptions/{id}
+export interface SubscriptionDetailResponse {
+  id: number;
+  customer: CustomerSummaryResponse;   // from customer.ts
+  milk_type: MilkTypeSummaryResponse;  // from milk-type.ts
   morning_quantity: number;
   evening_quantity: number;
   status: string;
@@ -239,35 +251,75 @@ export interface SubscriptionResponse {
 
 ## Delivery Exception (`delivery-exception.ts`)
 
+> Mirrors `app/schemas/delivery_exception.py`. Verified 2026-07-31: `end_date`/`reason` optional on create; `status` updatable.
+
 ```typescript
+export type ExceptionType = "VACATION" | "NO_MILK" | "HOLIDAY";
+
 export interface DeliveryExceptionCreate {
-  subscription_id: number;
-  exception_type: "VACATION" | "NO_MILK" | "HOLIDAY";
-  start_date: string;
-  end_date: string;
-  reason: string;
+  subscription_id: number;      // gt=0
+  exception_type: ExceptionType; // max 20
+  start_date: string;           // required ISO datetime
+  end_date?: string | null;
+  reason?: string | null;       // max 255
 }
 
 export interface DeliveryExceptionUpdate {
-  exception_type?: string;
-  end_date?: string;
-  reason?: string;
-  status?: string;
+  exception_type?: ExceptionType;
+  start_date?: string;
+  end_date?: string | null;
+  reason?: string | null;
+  status?: string;              // max 20
 }
 
+// GET /delivery-exceptions/ — flat list DTO
+export interface DeliveryExceptionListResponse {
+  id: number;
+  subscription_id: number;
+  customer_id: number;
+  customer_code: string;
+  customer_name: string;
+  route_name: string;
+  exception_type: string;
+  start_date: string;
+  end_date: string | null;
+  status: string;
+  is_active: boolean;
+}
+
+// POST/GET-by-id/PUT/DELETE single-resource response
 export interface DeliveryExceptionResponse {
   id: number;
   subscription_id: number;
-  customer_name?: string;
-  milk_name?: string;
   exception_type: string;
   start_date: string;
-  end_date: string;
-  reason: string;
+  end_date: string | null;
+  reason: string | null;
   status: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// GET /delivery-exceptions/{id} — nested detail DTO
+export interface DeliveryExceptionDetailResponse {
+  id: number;
+  subscription: SubscriptionSummaryResponse;
+  exception_type: string;
+  start_date: string;
+  end_date: string | null;
+  reason: string | null;
+  status: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionSummaryResponse {
+  id: number;
+  customer: CustomerSummaryResponse;
+  morning_quantity: number;
+  evening_quantity: number;
 }
 ```
 

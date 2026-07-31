@@ -91,6 +91,44 @@ curl http://localhost:8000/api/v1/health
 2. **Expected**: Table showing system users
 3. Create new user with role/password
 
+### V4f: Subscriptions (Phase 3)
+
+1. Log in as owner
+2. Navigate to Subscriptions page (`/subscriptions`)
+3. **Expected**: Table showing existing subscriptions with customer name/code, route, milk type (name + volume), morning/evening qty, status badge
+4. Click "Create Subscription"
+5. Fill form: select customer, select milk type, morning qty 2, evening qty 1
+6. Submit
+7. **Expected**: New subscription appears in list (status ACTIVE), toast "Subscription created"
+8. Edit the subscription, change morning quantity, submit
+9. **Expected**: Quantity updates in list
+10. Delete the subscription
+11. **Expected**: Confirm dialog, then row shows Inactive (or disappears — soft delete)
+12. **API note**: `POST /subscriptions` body must NOT include `start_date`/`end_date` — server assigns them. Sending them yields 422.
+
+### V4g: Delivery Exceptions (Phase 3)
+
+1. Navigate to Exceptions page (`/delivery-exceptions`)
+2. **Expected**: Table showing exceptions with customer, route, type, date range, status
+3. Click "Create Exception"
+4. Fill form: select subscription (customer + milk info shown), type VACATION, start date today, optional end date/reason
+5. Submit
+6. **Expected**: New exception appears, toast "Exception created"
+7. Edit an exception (change end date), submit
+8. **Expected**: Date updates
+9. Delete an exception
+10. **Expected**: Confirm dialog, then soft delete
+11. **Edge cases**: Overlapping date range for same subscription → 400 toast "overlaps with an existing exception"; inactive subscription → 400 toast.
+
+### V4h: CHECKER Read-Only (Phase 3)
+
+1. Log out, log in as a CHECKER user
+2. Navigate to Subscriptions and Exceptions
+3. **Expected**: Lists render, **no** Create/Edit/Delete buttons or links visible
+4. Manually navigate to `/subscriptions/new`
+5. **Expected**: 403 Forbidden page (RoleGuard)
+6. Sidebar Operations group shows Subscriptions/Exceptions for CHECKER
+
 ### V5: Delivery Session Workflow (Pending — Phase 5)
 
 ### V6: Payment Recording (Pending — Phase 6)

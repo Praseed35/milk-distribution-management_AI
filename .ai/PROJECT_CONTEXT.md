@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the full lifecycle of a milk distribution business: master data (customers, routes, milk types, employees), subscriptions, delivery exceptions, token book management, **daily delivery sessions**, **reconciliation**, **payment management**, and **reports & analytics**. Designed as a REST API backend that will eventually support a React frontend.
+A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the full lifecycle of a milk distribution business: master data (customers, routes, milk types, employees), subscriptions, delivery exceptions, token book management, **daily delivery sessions**, **reconciliation**, **payment management**, and **reports & analytics**. Serves a **React + TypeScript frontend** (`frontend/`, Sprint 9 in progress) via a REST API under `/api/v1`.
 
 **Business Domain**: Milk distribution cooperatives/dairies that deliver milk to customers on daily routes using subscription-based ordering. Customers receive physical "token books" (prepaid booklets) to collect milk. Delivery partners load milk, deliver to customers, collect tokens/cash, return leftover milk, and the session is reconciled.
 
@@ -16,15 +16,15 @@ A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the
 
 | Metric | Value |
 |--------|-------|
-| SQLAlchemy Models | **17** (10 original + DeliverySession, DailyDelivery, SessionEdit, TokenSheetWarning + CustomerBill, CustomerBillItem, CustomerPayment) |
-| Alembic Migrations | **11** (9 original + payment tables + report indexes) |
-| API Routers | **14** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, **deliveries**, **delivery_edit**, **payments**, **reports**) |
-| Service Modules | **20** (auth, user, route, customer, milk_type, employee, subscription, delivery_exception, token_book, delivery_service, delivery_registration, delivery_reconciliation, delivery_edit_service, payment, customer_bill, customer_payment + reports: route_delivery, revenue, collection, consumption, token_utilization, dashboard) |
-| Schema Modules | **17** (original + delivery + payments + reports) |
-| Exception Modules | **11** (no new exceptions for reports) |
+| SQLAlchemy Models | **17 classes / 16 files** (10 original + DeliverySession, DailyDelivery, SessionEdit, TokenSheetWarning + CustomerBill, CustomerBillItem, CustomerPayment — CustomerBillItem lives in customer_bill.py) |
+| Alembic Migrations | **12** (9 original + payment tables + report indexes) |
+| API Routers | **13** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, **deliveries**, **delivery_edit**, **payments**, **reports**) |
+| Service Modules | **15 service files + 8 reports files** (auth, user, route, customer, milk_type, employee, subscription, delivery_exception, token_book, delivery_service, delivery_registration, delivery_reconciliation, delivery_edit_service, payment + reports: route_delivery, revenue, collection, consumption, token_utilization, dashboard, common, cache) |
+| Schema Modules | **16** (original + delivery + payments + reports) |
+| Exception Modules | **11 + base** (no new exceptions for reports) |
 | Test Files | **12** (delivery + payments + reports added) |
 | Total API Endpoints | **~84** (39 original + 25 delivery + 14 payments + 6 reports) |
-| Frontend | Not started |
+| Frontend | **In progress — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) complete; Phases 3–8 pending** |
 
 ---
 
@@ -36,7 +36,7 @@ A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the
 | ORM | SQLAlchemy 2.0 | `declarative_base()` style (legacy pattern) |
 | Database | PostgreSQL | localhost:5432 |
 | DB Name | `milk_managemen_ai` | (note: typo is intentional in code) |
-| Migrations | Alembic | **9** migration files in `alembic/versions/` |
+| Migrations | Alembic | **12** migration files in `alembic/versions/` |
 | Auth | JWT (python-jose) | HS256, 30min expiry |
 | Password Hashing | bcrypt (passlib) | CryptContext with auto-deprecation |
 | Validation | Pydantic v2 | `model_config = ConfigDict(from_attributes=True)` |
@@ -59,16 +59,17 @@ Router (HTTP) -> Service (Business Logic) -> SQLAlchemy ORM (Data Access)
 
 ### Application Entry Point
 
-- `app/main.py`: Creates `FastAPI()` instance, includes all **12 routers**, defines root `/` health endpoint
-- **No middleware**, **no CORS**, **no exception handlers** at the app level yet
-- No API prefix (all routes are at root level)
+- `app/main.py`: Creates `FastAPI()` instance, adds **CORS middleware** (allow `http://localhost:5173`), creates an `api_v1 = APIRouter(prefix="/api/v1")` umbrella router that includes all **13 routers**, defines `GET /api/v1/health`, AND re-includes all routers at root level for backward compatibility (deprecated)
+- **CORS configured** for `http://localhost:5173` (Vite dev server)
+- **API prefix added**: all routes are available at `/api/v1/...` (primary) AND root level (legacy/deprecated)
+- **No global exception handlers** at the app level yet
 - Delivery routers: `deliveries` (prefix `/deliveries/sessions`) and `delivery_edit` (prefix `/deliveries`)
 
 ### File Structure (Actual)
 
 ```
 app/
-├── main.py                 # FastAPI app, 12 router registrations, health endpoint
+├── main.py                 # FastAPI app, CORS, /api/v1 umbrella + legacy root routers, health endpoint
 ├── database.py             # Engine, SessionLocal, Base (declarative_base)
 ├── dependencies.py         # get_db() generator, OAuth2PasswordBearer(tokenUrl="auth/login")
 ├── __init__.py
@@ -81,21 +82,23 @@ app/
 │   ├── roles.py            # UserRole enum (OWNER, CHECKER, DELIVERY_PARTNER)
 │   ├── shifts.py           # Shift enum (MORNING, EVENING)
 │   └── statuses.py         # ~12 enums (SessionStatus, DeliveryStatus, DeliverySource, WarningCode, ReconciliationStatus, etc.)
-├── models/                 # 14 SQLAlchemy ORM models
-│   ├── __init__.py         # Imports all 14 models (required for Alembic autogenerate)
+├── models/                 # 16 model files (17 model classes) SQLAlchemy ORM
+│   ├── __init__.py         # Imports all models (required for Alembic autogenerate)
 │   ├── user.py, route.py, customer.py, milk_type.py, employee.py
 │   ├── subscription.py, delivery_exception.py
 │   ├── token_identity.py, token_book_issue.py, token_book_payment.py
 │   ├── delivery_session.py, daily_delivery.py, session_edit.py, token_sheet_warning.py
-├── schemas/                # 17 Pydantic schema modules
+│   ├── customer_bill.py    # CustomerBill + CustomerBillItem
+│   └── customer_payment.py
+├── schemas/                # 16 Pydantic schema modules
 │   ├── __init__.py
 │   ├── auth.py, user.py, route.py, customer.py, milk_type.py, employee.py
 │   ├── subscription.py, delivery_exception.py
 │   ├── token_identity.py, token_book.py
 │   ├── delivery_session.py, daily_delivery.py, delivery_edit.py
-│   ├── payment.py, customer_bill.py, customer_payment.py
-│   ├── reports.py
-├── routers/                # 14 FastAPI APIRouters
+│   ├── payment.py
+│   └── reports.py
+├── routers/                # 13 FastAPI APIRouters
 │   ├── __init__.py
 │   ├── auth.py (/auth), users.py (/users), routes.py (/routes)
 │   ├── customers.py (/customers), milk_types.py (/milk-types)
@@ -106,7 +109,7 @@ app/
 │   ├── delivery_edit.py (/deliveries) -- 10 endpoints
 │   ├── payments.py (/payments) -- 14 endpoints
 │   └── reports.py (/reports) -- 6 endpoints
-├── services/               # 20 business logic modules (module-level functions)
+├── services/               # 15 business logic modules + reports package (module-level functions)
 │   ├── auth_service.py, user_service.py, route_service.py
 │   ├── customer_service.py, milk_type_service.py, employee_service.py
 │   ├── subscription_service.py, delivery_exception_service.py
@@ -116,17 +119,15 @@ app/
 │   ├── delivery_reconciliation.py  # Reconciliation calculation, submit, validate, summary
 │   ├── delivery_edit_service.py    # Session reopen, undo delivery, edit delivery, edit history
 │   ├── payment_service.py          # Bill generation, payments, outstanding
-│   ├── customer_bill_service.py    # Customer bill CRUD
-│   ├── customer_payment_service.py # Customer payment CRUD
 │   └── reports/                    # 6 report + 1 common + 1 cache
 │       ├── __init__.py
-│       ├── route_delivery.py, revenue.py, collection_efficiency.py
+│       ├── route_delivery.py, revenue.py, collection.py
 │       ├── consumption.py, token_utilization.py, dashboard.py
-│       ├── common.py (CSV export), cache.py (in-memory TTL cache)
-├── exceptions/             # 11 custom exception modules
+│       ├── common.py (date range, CSV export, role-scoped routes), cache.py (in-memory TTL cache)
+├── exceptions/             # 11 custom exception modules + base
 │   ├── base.py, user.py, route.py, customer.py, milk_type.py
 │   ├── employee.py, subscription.py, delivery_exception.py, token_book.py
-│   ├── delivery.py, delivery_edit.py
+│   ├── delivery.py, delivery_edit.py, payment.py
 ├── common/                 # Empty
 └── utils/                  # Empty
 
@@ -145,14 +146,14 @@ tests/
 ├── test_subscriptions.py
 ├── test_delivery_exceptions.py
 ├── test_token_books.py
-├── test_daily_delivery.py     # 24 delivery tests (session, registration, reconciliation, edit)
-├── test_payments.py           # Payment management tests
+├── test_daily_delivery.py     # 68 delivery tests (session, registration, reconciliation, edit)
+├── test_payments.py           # 33 payment management tests
 └── test_reports.py            # 24 reports tests (6 stories + RBAC + CSV + auth)
 # 12 test files, 343 tests total
 
 alembic/
 ├── env.py                  # Imports Base.metadata, app.models for autogenerate
-└── versions/               # 11 migration files (chronological)
+└── versions/               # 12 migration files (chronological)
     ├── cd5183b67dae_initial_schema.py          # users, routes
     ├── de893ed2ffb7_add_customers_table.py     # customers
     ├── 4085a4134c96_add_milk_types_and_employees_tables.py
@@ -162,8 +163,9 @@ alembic/
     ├── 4e5f6a7b8c9d_create_token_books_tables.py  # token_identities, token_book_issues, token_book_payments
     ├── 5a6b7c8d9e0f_create_delivery_tables.py     # delivery_sessions, daily_deliveries, session_edits, token_sheet_warnings
     ├── 1154a3a25414_remove_is_active_in_update_customer_.py  # EMPTY migration (no upgrade/downgrade logic)
-    ├── aecd8f99d6d_merge_token_books_and_delivery_heads.py   # Merge heads for payment tables
-    └── c5c16b3a8226_add_payment_tables_and_report_indexes.py # customer_bills, customer_bill_items, customer_payments + indexes
+    ├── aeecd8f99d6d_merge_token_books_and_delivery_heads.py  # Merge heads
+    ├── 6a0f9777a5cb_add_payment_management_tables.py         # customer_bills, customer_bill_items, customer_payments
+    └── 119aa199d5d7_add_report_indexes.py                    # report indexes
 ```
 
 ---
@@ -683,16 +685,25 @@ python scripts/seed.py  # Restore permanent seed data
 | Payment Management | 14 | 5 story + RBAC + auth | Bills, payments, outstanding calculation |
 | Reports & Analytics | 6 | 24 across 6 story areas + RBAC + CSV + auth | Route delivery, revenue, collection, consumption, token utilization, dashboard |
 
+### In Progress
+
+| Priority | Module | Reason |
+|----------|--------|--------|
+| Frontend Phase 3 | Subscriptions & Exceptions pages | React app in progress (Sprint 9) |
+| Frontend Phase 4 | Token Books pages | React app in progress (Sprint 9) |
+| Frontend Phase 5 | Delivery Management pages | React app in progress (Sprint 9) |
+| Frontend Phase 6 | Payments pages | React app in progress (Sprint 9) |
+| Frontend Phase 7 | Reports pages | React app in progress (Sprint 9) |
+| Frontend Phase 8 | Polish & testing | React app in progress (Sprint 9) |
+
 ### Not Started
 
 | Priority | Module | Reason |
 |----------|--------|--------|
-| Frontend | React Application | Backend not finalized |
-| Sprint 8 | AI Features | Future |
+| Sprint 8 | AI Features (demand forecasting, anomaly detection) | Future |
 | Sprint 10 | Docker/CI-CD/Deployment | Future |
 | Extended | Token Register (sheet-level ledger) | Not implemented |
 | Extended | Warning Log dashboard | Not implemented |
-| Extended | Customer payment ledger | Not implemented |
 
 ---
 
@@ -720,7 +731,7 @@ python scripts/seed.py  # Restore permanent seed data
 6. **No pagination on original endpoints**: Delivery session list has pagination but original CRUD endpoints do not
 7. **No filtering/searching on original endpoints**: Delivery session list has filters but original list endpoints don't
 8. **Hardcoded secret**: `SECRET_KEY` in `core/config.py` is hardcoded (not from env)
-9. **No CORS middleware**: Not configured yet (needed for frontend)
+9. **CORS is now configured**: `app/main.py` allows `http://localhost:5173` (Vite dev server) — was previously missing; also `/api/v1` prefix added with health endpoint (legacy root routes kept for backward compatibility)
 10. **Inconsistent status code on create**: Some create endpoints return 201, others default to 200
 11. **No repository layer**: Services query models directly, which is fine for this project size
 12. **Employee InactiveRouteError class**: Defined in `exceptions/employee.py` separately from `exceptions/route.py` version - same name, different module

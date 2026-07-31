@@ -7,10 +7,13 @@
 ## Base URL
 
 ```
-http://localhost:8000
+Primary:   http://localhost:8000/api/v1
+Legacy:    http://localhost:8000           (root-level routes, deprecated but kept for backward compatibility)
 ```
 
 Start with: `uvicorn app.main:app --reload`
+
+**Note**: All endpoints in this document are shown at their root paths for readability. Every endpoint is ALSO available under the `/api/v1` prefix (e.g., `POST /auth/login` → `POST /api/v1/auth/login`). The React frontend uses the `/api/v1` paths exclusively.
 
 ---
 

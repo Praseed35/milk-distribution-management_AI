@@ -1,5 +1,7 @@
 # Milk Distribution Management System
 
+> **DEPRECATED — SUPERSEDED.** This is an early design snapshot (mentions a repository layer and `common/`/`utils/` dirs that were never implemented). The canonical, up-to-date project memory is **`PROJECT_CONTEXT.md`**. Keep this file only as historical reference.
+
 ## Stack
 
 - FastAPI

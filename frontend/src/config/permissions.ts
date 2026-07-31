@@ -32,8 +32,8 @@ export const navigation: NavItem[] = [
     children: [
       { label: "Subscriptions", path: "/subscriptions", roles: ["OWNER", "ADMIN", "CHECKER"] },
       { label: "Exceptions", path: "/delivery-exceptions", roles: ["OWNER", "ADMIN", "CHECKER"] },
-      { label: "Token Identities", path: "/token-identities", roles: ["OWNER", "ADMIN"] },
-      { label: "Token Book Issues", path: "/token-book-issues", roles: ["OWNER", "ADMIN"] },
+      { label: "Token Identities", path: "/token-identities", roles: ["OWNER", "ADMIN", "CHECKER"] },
+      { label: "Token Book Issues", path: "/token-book-issues", roles: ["OWNER", "ADMIN", "CHECKER"] },
       { label: "Token Payments", path: "/token-book-payments", roles: ["OWNER", "ADMIN", "CHECKER"] },
     ],
   },

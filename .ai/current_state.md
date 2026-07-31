@@ -1,6 +1,6 @@
 # CURRENT_STATE.md - Project Snapshot
 
-> Snapshot of the project as of July 29, 2026 — Sprint 6 complete.
+> Snapshot of the project as of July 31, 2026 — Sprints 1–7 complete, Frontend Phases 1–2 complete.
 
 ---
 
@@ -8,18 +8,21 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Tables | **17** (14 original + customer_payments, customer_bills, customer_bill_items) |
-| Total API Endpoints | **~78** (39 original + 25 delivery + 14 payment) |
-| Total Test Files | **11** (9 original + test_daily_delivery + test_payments) |
-| Test Status | **319 passed, 0 failed** |
-| Sprints Code-Complete | **6** (1, 2, 3, 4-core, 5, 6) |
-| Sprints Tested | **6** (1, 2, 3, 4-core, 5, 6) |
-| Next Priority | **Sprint 7: Reports & Analytics** |
+| Total Tables | **17** (16 model files: users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_identities, token_book_issues, token_book_payments, delivery_sessions, daily_deliveries, session_edits, token_sheet_warnings, customer_bills, customer_bill_items, customer_payments) |
+| Total API Endpoints | **~84** (39 original + 25 delivery + 14 payment + 6 reports) |
+| Total Test Files | **12** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, daily_delivery, payments, reports) |
+| Test Status | **343 passed, 0 failed** |
+| Sprints Code-Complete | **7** (1, 2, 3, 4-core, 5, 6, 7) |
+| Sprints Tested | **7** (1, 2, 3, 4-core, 5, 6, 7) |
+| Frontend Status | **Sprint 9 in progress** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) complete; Phases 3–8 pending |
+| Next Priority | **Frontend Phase 3: Subscriptions & Exceptions pages** |
 | Database | PostgreSQL localhost:5432/milk_managemen_ai |
 | Framework | FastAPI |
 | ORM | SQLAlchemy 2.0 |
 | Auth | JWT (30min, HS256) |
-| Python Version | 3.10+ (uses `str | None` syntax) |
+| API Prefix | `/api/v1` (primary) + root-level legacy routes (deprecated, kept for backward compat) |
+| CORS | Configured for http://localhost:5173 |
+| Python Version | 3.10+ (uses `str \| None` syntax) |
 
 ---
 
@@ -28,15 +31,16 @@
 | Directory | Files | Purpose |
 |-----------|-------|---------|
 | app/core/ | 4 | Security, auth, config, roles |
-| app/constants/ | 3 | Enum definitions (incl. CustomerPaymentMode, BillStatus) |
-| app/models/ | **17** (+ __init__) | SQLAlchemy models (incl. payment models) |
-| app/schemas/ | **15** (+ __init__) | Pydantic schemas (incl. delivery, payment) |
-| app/routers/ | **13** (+ __init__) | API routers (incl. deliveries, delivery_edit, payments) |
-| app/services/ | **15** (+ __init__) | Business logic (incl. payment_service) |
-| app/exceptions/ | **12** (+ __init__, + base) | Custom exceptions (incl. delivery, delivery_edit, payment) |
-| tests/ | **11** test files + conftest | Test suite (incl. delivery + payment tests) |
-| alembic/versions/ | **11** | Database migrations (merged heads + payment tables) |
+| app/constants/ | 3 | Enum definitions (roles, shifts, statuses) |
+| app/models/ | 16 (17 classes) | SQLAlchemy models (CustomerBillItem lives in customer_bill.py) |
+| app/schemas/ | 16 | Pydantic schemas (incl. delivery, payment, reports) |
+| app/routers/ | 13 | API routers (incl. deliveries, delivery_edit, payments, reports) |
+| app/services/ | 15 + reports/ (8) | Business logic (incl. delivery_*, payment_service, reports) |
+| app/exceptions/ | 11 + base | Custom exceptions (incl. delivery, delivery_edit, payment) |
+| tests/ | 12 test files + conftest | Test suite (343 tests) |
+| alembic/versions/ | 12 | Database migrations (merged heads + payment tables + report indexes) |
 | scripts/ | 2 | Seed + test helper |
+| frontend/src/ | ~40 files | React SPA (Phases 1–2 complete) |
 
 ---
 
@@ -49,6 +53,7 @@
 5. **Read `API_REFERENCE.md`** for endpoint details
 6. **Run tests**: `pytest` to verify everything works
 7. **Start coding**: Follow patterns in existing services/routers
+8. **Frontend work**: Read `specs/004-react-frontend/tasks.md` for the task list (Phases 3–8 pending)
 
 ---
 
@@ -62,7 +67,7 @@
 5. Create exceptions in `app/exceptions/{name}.py`
 6. Create service in `app/services/{name}_service.py`
 7. Create router in `app/routers/{name}.py`
-8. Register router in `app/main.py`
+8. Register router in `app/main.py` (both `api_v1` umbrella AND legacy root section)
 9. Create tests in `tests/test_{name}.py`
 10. Add seed data in `scripts/seed.py`
 
@@ -140,9 +145,10 @@ alembic upgrade head
 
 ## Last Updated
 
-- Date: July 29, 2026
-- Last Sprint Code Completed: Sprint 6 (Payment Management)
-- Last Sprint Fully Tested: Sprint 6 (Payment Management)
-- Test Files: 11 (delivery + payments)
+- Date: July 31, 2026
+- Last Sprint Code Completed: Sprint 7 (Reports & Analytics)
+- Last Sprint Fully Tested: Sprint 7 (Reports & Analytics)
+- Test Files: 12 (delivery + payments + reports)
 - Tables: 17
+- Frontend: Phases 1–2 complete (of 8)
 - Known Bugs: 0

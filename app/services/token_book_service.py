@@ -79,6 +79,23 @@ def create_identity(
             identity.token_number
         )
 
+    used_by_other_customer = (
+        db.query(TokenIdentity)
+        .filter(
+            TokenIdentity.token_number == identity.token_number,
+            TokenIdentity.customer_id != identity.customer_id,
+            TokenIdentity.is_active == True
+        )
+        .first()
+    )
+
+    if used_by_other_customer:
+        raise DuplicateTokenIdentityError(
+            identity.customer_id,
+            identity.milk_type_id,
+            identity.token_number
+        )
+
     new_identity = TokenIdentity(
         customer_id=identity.customer_id,
         milk_type_id=identity.milk_type_id,
@@ -230,6 +247,24 @@ def update_identity(
         )
 
         if existing:
+            raise DuplicateTokenIdentityError(
+                identity_to_update.customer_id,
+                identity_to_update.milk_type_id,
+                identity.token_number
+            )
+
+        used_by_other_customer = (
+            db.query(TokenIdentity)
+            .filter(
+                TokenIdentity.token_number == identity.token_number,
+                TokenIdentity.customer_id != identity_to_update.customer_id,
+                TokenIdentity.is_active == True,
+                TokenIdentity.id != identity_id
+            )
+            .first()
+        )
+
+        if used_by_other_customer:
             raise DuplicateTokenIdentityError(
                 identity_to_update.customer_id,
                 identity_to_update.milk_type_id,

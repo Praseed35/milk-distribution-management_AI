@@ -104,6 +104,32 @@ GET  /payments/outstanding/{id} → outstanding balance
 POST /payments/                 → record payment
 ```
 
+### Subscription & Exception Flow (Phase 3)
+List endpoints return **plain arrays** (no pagination envelope). Create returns **201** + resource DTO.
+
+```
+# Subscriptions
+GET  /subscriptions/                        → SubscriptionListResponse[]   [flat joined fields]
+GET  /subscriptions/customer/{id}           → SubscriptionListResponse[]   [filter by customer]
+GET  /subscriptions/{id}                    → SubscriptionDetailResponse   [nested customer + milk_type]
+POST /subscriptions/                        → 201 SubscriptionResponse      [no start_date/end_date in body]
+PUT  /subscriptions/{id}                    → SubscriptionResponse
+DELETE /subscriptions/{id}                  → SubscriptionResponse          [soft delete, is_active=false]
+
+# Delivery Exceptions
+GET  /delivery-exceptions/                  → DeliveryExceptionListResponse[]  [flat joined fields]
+GET  /delivery-exceptions/subscription/{id} → DeliveryExceptionResponse[]       [filter by subscription]
+GET  /delivery-exceptions/{id}              → DeliveryExceptionDetailResponse   [nested subscription]
+POST /delivery-exceptions/                  → 201 DeliveryExceptionResponse
+PUT  /delivery-exceptions/{id}              → DeliveryExceptionResponse
+DELETE /delivery-exceptions/{id}            → DeliveryExceptionResponse         [soft delete]
+```
+
+**Field notes**
+- `SubscriptionCreate` accepts `status` (default `"ACTIVE"`); `start_date`/`end_date` are response-only.
+- `exception_type` ∈ `VACATION | NO_MILK | HOLIDAY`.
+- Route-level filtering (subscriptions by route, exceptions by customer/route) is **client-side** on the list DTOs — backend accepts no such query params (known backend gap).
+
 ### Report Queries
 All reports support `?preset=this_month` or `?from_date=&to_date=`, and `?format=csv`.
 ```

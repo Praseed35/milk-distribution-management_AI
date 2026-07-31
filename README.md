@@ -11,6 +11,10 @@ Full-stack ERP for milk distribution with a FastAPI backend and React frontend.
 - **Milk Type Management** - Product catalog (e.g., "Full Cream Milk 1000ml", "Toned Milk 500ml")
 - **User Authentication** - JWT-based authentication with role-based access control
 - **Employee Management** - Employee records with optional user linking
+- **Token Book Management** - Token identities, book issuance, and book payments (prepaid token system)
+- **Delivery Management** - Daily delivery sessions (morning/evening shifts), dispatch, token registration, unplanned deliveries, reconciliation with token sheet warnings
+- **Payment Management** - Monthly bill generation from delivered quantities, advance & bill payments (CASH/UPI/CARD/CHEQUE/BANK_TRANSFER), outstanding balance tracking
+- **Reports & Analytics** - Route-wise, customer consumption, revenue, collection efficiency, token utilization reports + operational dashboard (CSV export)
 
 ## Tech Stack
 
@@ -24,8 +28,8 @@ Full-stack ERP for milk distribution with a FastAPI backend and React frontend.
 - **Validation**: Pydantic v2
 
 ### Frontend (`frontend/`)
-- **Framework**: React 18 + TypeScript
-- **Build Tool**: Vite 5
+- **Framework**: React 19 + TypeScript
+- **Build Tool**: Vite 8
 - **Styling**: Tailwind CSS v4
 - **Routing**: React Router v7
 - **Data Fetching**: TanStack Query v5 + Axios
@@ -80,6 +84,8 @@ npm run dev        # http://localhost:5173
 
 ## API Endpoints
 
+> All endpoints are served under the `/api/v1` prefix (e.g., `GET /api/v1/customers/`). The legacy root-level paths (e.g., `GET /customers/`) still work for backward compatibility but are deprecated.
+
 ### Authentication
 - `POST /auth/login` - Login and get JWT token
 - `GET /auth/me` - Get current user profile
@@ -125,6 +131,20 @@ npm run dev        # http://localhost:5173
 - `POST /delivery-exceptions/` - Create delivery exception
 - `PUT /delivery-exceptions/{id}` - Update delivery exception
 - `DELETE /delivery-exceptions/{id}` - Cancel delivery exception
+
+### Deliveries, Payments & Reports
+- `GET/POST /deliveries/sessions/...` - Delivery session lifecycle (plan, dispatch, close, reopen)
+- `GET /deliveries/session/{id}` - Session deliveries with status filter + pagination
+- `POST /deliveries/unplanned` - Register unplanned deliveries
+- `POST /deliveries/{id}/register-token` - Register token sheet with warning acknowledgment
+- `PUT /deliveries/{id}/edit` - Edit deliveries in reopened sessions (owner only)
+- `GET /deliveries/session/{id}/edit-history` - Audit trail of session edits
+- `POST /payments/bills/generate` - Generate monthly bill for a customer
+- `GET /payments/outstanding/{customer_id}` - Outstanding balance
+- `GET/POST /payments/...` - Payment and bill CRUD (CASH/UPI/CARD/CHEQUE/BANK_TRANSFER)
+- `GET /reports/...` - Route delivery, customer consumption, revenue, collection efficiency, token utilization reports + dashboard
+
+See `.ai/API_REFERENCE.md` for the complete endpoint reference (~84 endpoints).
 
 ## Testing
 

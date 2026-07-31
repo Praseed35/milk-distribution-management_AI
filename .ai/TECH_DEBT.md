@@ -33,8 +33,8 @@ Now has 24 tests across session lifecycle, registration, reconciliation, and edi
 ### 3. Database Name Typo
 Database is `milk_managemen_ai` (missing 't' in management). Consistent everywhere but confusing.
 
-### 4. No CORS Configuration
-No CORS middleware configured. Required before frontend integration.
+### 4. No CORS Configuration ✅ RESOLVED
+CORS middleware added in `app/main.py` allowing `http://localhost:5173` (Vite dev server). Required for frontend integration — now done.
 
 ### 5. Inconsistent Exception Hierarchy
 `BusinessException` base class exists in `exceptions/base.py` but many exceptions extend `Exception` directly:
@@ -113,10 +113,8 @@ Empty migration — `upgrade()` and `downgrade()` do nothing. Either implement t
 - ✅ Pagination + filtering on delivery session list
 
 ### Still Needed
-- API versioning (`/api/v1/`)
-- CORS middleware
 - OpenAPI customization (title, description, version)
 - Request/response logging middleware
-- Comprehensive payment ledger
-- Advance payment tracking
-- Bill generation
+- SECRET_KEY hardening (move to env variable)
+- Comprehensive payment ledger / sheet-level token register
+- Rate limiting

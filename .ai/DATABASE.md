@@ -1,6 +1,6 @@
 # DATABASE.md - Complete Database Schema
 
-> All 14 tables with columns, constraints, relationships, and migration history.
+> All 17 tables with columns, constraints, relationships, and migration history.
 
 ---
 
@@ -422,6 +422,78 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)      │
 
 ---
 
+## Table: customer_bills
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | INTEGER | PRIMARY KEY, INDEX | Auto-increment |
+| customer_id | INTEGER | FK -> customers.id, NOT NULL | |
+| bill_date | DATE | SERVER DEFAULT current_date, NOT NULL | |
+| bill_period_start | DATE | NOT NULL | Start of billing period (INDEXED) |
+| bill_period_end | DATE | NOT NULL | End of billing period |
+| total_amount | NUMERIC(10,2) | NOT NULL | Sum of line items |
+| paid_amount | NUMERIC(10,2) | DEFAULT 0 | Paid so far |
+| balance_amount | NUMERIC(10,2) | DEFAULT 0 | total - paid |
+| status | VARCHAR(20) | NOT NULL, DEFAULT 'PENDING' | PENDING/PAID/CANCELLED |
+| due_date | DATE | NULLABLE | |
+| remarks | VARCHAR(255) | NULLABLE | |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE | Soft delete |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() | |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate now() | |
+
+**Foreign keys**: customer_id -> customers.id
+**Relationships**: Belongs to Customer; has many CustomerBillItems, has many CustomerPayments
+
+---
+
+## Table: customer_bill_items
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | INTEGER | PRIMARY KEY, INDEX | Auto-increment |
+| bill_id | INTEGER | FK -> customer_bills.id, NOT NULL | |
+| milk_type_id | INTEGER | FK -> milk_types.id, NOT NULL | |
+| quantity | INTEGER | NOT NULL | Total delivered qty |
+| unit_price | NUMERIC(10,2) | NOT NULL | |
+| amount | NUMERIC(10,2) | NOT NULL | quantity × unit_price |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE | Soft delete |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() | |
+
+**Foreign keys**: bill_id -> customer_bills.id, milk_type_id -> milk_types.id
+**Relationships**: Belongs to CustomerBill and MilkType. `milk_name` property exposes `milk_type.milk_name`.
+**Note**: Defined in the same file as CustomerBill (`app/models/customer_bill.py`).
+
+---
+
+## Table: customer_payments
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | INTEGER | PRIMARY KEY, INDEX | Auto-increment |
+| customer_id | INTEGER | FK -> customers.id, NOT NULL | |
+| payment_date | TIMESTAMPTZ | SERVER DEFAULT now(), NOT NULL | (INDEXED for reports) |
+| amount | NUMERIC(10,2) | NOT NULL | |
+| payment_mode | VARCHAR(20) | NOT NULL | CASH/UPI/CARD/CHEQUE/BANK_TRANSFER |
+| payment_type | VARCHAR(20) | NOT NULL | ADVANCE/BILL_PAYMENT |
+| reference_number | VARCHAR(50) | NULLABLE | |
+| bill_id | INTEGER | FK -> customer_bills.id, NULLABLE | Required for BILL_PAYMENT |
+| collected_by | INTEGER | FK -> users.id, NULLABLE | User who collected |
+| remarks | VARCHAR(255) | NULLABLE | |
+| is_active | BOOLEAN | NOT NULL, DEFAULT TRUE | Soft delete |
+| created_at | TIMESTAMPTZ | SERVER DEFAULT now() | |
+| updated_at | TIMESTAMPTZ | SERVER DEFAULT now(), onupdate now() | |
+
+**Foreign keys**: customer_id -> customers.id, bill_id -> customer_bills.id, collected_by -> users.id
+**Relationships**: Belongs to Customer, optionally belongs to CustomerBill, optionally references User (collector)
+
+**Business rules**:
+- payment_type = BILL_PAYMENT requires a bill_id
+- For BILL_PAYMENT, bill status must not already be PAID or CANCELLED
+- Recording a payment updates the bill's paid_amount and balance_amount; if balance <= 0, bill status becomes PAID
+- Bill cannot be cancelled if it has payments
+
+---
+
 ## Alembic Migration History
 
 | # | Revision | Description |
@@ -435,6 +507,9 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)      │
 | 7 | 4e5f6a7b8c9d | Create token_books tables (token_identities, token_book_issues, token_book_payments) |
 | 8 | **5a6b7c8d9e0f** | **Create delivery tables (delivery_sessions, daily_deliveries, session_edits, token_sheet_warnings)** |
 | 9 | 1154a3a25414 | Remove is_active in update customer (EMPTY — no upgrade/downgrade logic) |
+| 10 | aeecd8f99d6d | Merge token_books and delivery heads |
+| 11 | 6a0f9777a5cb | Add payment management tables (customer_bills, customer_bill_items, customer_payments) |
+| 12 | 119aa199d5d7 | Add report indexes (delivery_status, payment_date, bill_period_start) |
 
 ### Useful Commands
 ```bash
@@ -452,7 +527,8 @@ All primary key columns have explicit indexes (via `index=True`):
 - users.id, routes.id, customers.id, milk_types.id, employees.id
 - subscriptions.id, delivery_exceptions.id
 - token_identities.id, token_book_issues.id, token_book_payments.id
-- **delivery_sessions.id, daily_deliveries.id, session_edits.id, token_sheet_warnings.id**
+- delivery_sessions.id, daily_deliveries.id, session_edits.id, token_sheet_warnings.id
+- customer_bills.id, customer_bill_items.id, customer_payments.id
 
 Additional composite unique constraints (implicit indexes):
 - users.username
@@ -461,4 +537,9 @@ Additional composite unique constraints (implicit indexes):
 - milk_types.milk_name
 - employees.employee_code, employees.phone
 - token_identities (customer_id, milk_type_id, token_number)
-- **delivery_sessions (route_id, delivery_date, shift)**
+- delivery_sessions (route_id, delivery_date, shift)
+
+Report indexes added in migration `119aa199d5d7`:
+- daily_deliveries.delivery_status (for reports filtering)
+- customer_payments.payment_date
+- customer_bills.bill_period_start
