@@ -61,7 +61,7 @@ export default function MilkTypeFormPage() {
   return (
     <div className="max-w-lg mx-auto">
       <h1 className="text-xl font-semibold text-slate-800 mb-6">{isEdit ? "Edit Milk Type" : "Create Milk Type"}</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 bg-white p-6 rounded-lg shadow">
         <Input label="Milk Name" required value={form.milk_name} onChange={(e) => setForm({ ...form, milk_name: e.target.value })} error={errors.milk_name} />
         <Input label="Volume (ml)" required type="number" value={form.volume_ml} onChange={(e) => setForm({ ...form, volume_ml: e.target.value })} error={errors.volume_ml} />
         <Input label="Unit Price" required type="number" step="0.01" value={form.unit_price} onChange={(e) => setForm({ ...form, unit_price: e.target.value })} error={errors.unit_price} />

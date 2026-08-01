@@ -76,7 +76,7 @@ export default function EmployeeFormPage() {
   return (
     <div className="max-w-lg mx-auto">
       <h1 className="text-xl font-semibold text-slate-800 mb-6">{isEdit ? "Edit Employee" : "Create Employee"}</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 bg-white p-6 rounded-lg shadow">
         <Input label="Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} error={errors.name} />
         <Input label="Phone" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} error={errors.phone} />
         <Input label="Address" value={form.address ?? ""} onChange={(e) => setForm({ ...form, address: e.target.value })} />

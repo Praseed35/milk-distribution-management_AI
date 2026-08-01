@@ -49,7 +49,7 @@ export default function RouteFormPage() {
   return (
     <div className="max-w-lg mx-auto">
       <h1 className="text-xl font-semibold text-slate-800 mb-6">{isEdit ? "Edit Route" : "Create Route"}</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 bg-white p-6 rounded-lg shadow">
         <Input label="Route Code" required value={form.route_code} onChange={(e) => setForm({ ...form, route_code: e.target.value })} error={errors.route_code} disabled={isEdit} />
         <Input label="Route Name" required value={form.route_name} onChange={(e) => setForm({ ...form, route_name: e.target.value })} error={errors.route_name} />
         <Input label="Description" value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} />

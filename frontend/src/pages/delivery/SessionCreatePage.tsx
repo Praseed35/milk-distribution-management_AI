@@ -53,7 +53,7 @@ export default function SessionCreatePage() {
   return (
     <div className="max-w-lg mx-auto">
       <h1 className="text-xl font-semibold text-slate-800 mb-6">Create Delivery Session</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 bg-white p-6 rounded-lg shadow">
         <Select
           label="Route"
           required

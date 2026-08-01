@@ -97,7 +97,7 @@ export default function ExceptionFormPage() {
   return (
     <div className="max-w-lg mx-auto">
       <h1 className="text-xl font-semibold text-slate-800 mb-6">{isEdit ? "Edit Delivery Exception" : "Create Delivery Exception"}</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 bg-white p-6 rounded-lg shadow">
         <Select
           label="Subscription"
           required

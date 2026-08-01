@@ -496,3 +496,61 @@ Never
 Tests should verify that the ERP behaves correctly from a business perspective.
 
 A feature is considered complete only when its expected business behavior is verified through automated tests.
+
+---
+
+# End-to-End (Playwright) Testing
+
+E2E tests run the real FastAPI backend and the real React frontend together and are used to surface
+frontend↔backend contract gaps, auth flows, and role guards that unit/API tests cannot catch.
+
+## How to Run
+
+From `frontend/`:
+
+```
+npx playwright test        # headless, single worker
+npx playwright test --ui   # interactive UI
+npx playwright test e2e/delivery.spec.ts   # single spec
+```
+
+## Architecture
+
+- **Isolated database** `milk_management_e2e` — never the dev/prod DB `milk_managemen_ai`.
+- Two `webServer` entries in `frontend/playwright.config.ts` boot everything per run:
+  1. `scripts/e2e_backend.py` — FastAPI on port **8001**; on startup it drops/creates tables and
+     seeds from `scripts/seed.py`, so every run starts from a known state.
+  2. Vite dev server on port **5174**, proxying `/api` → `http://localhost:8001`.
+- `projects`: `setup-owner` (logs in as `owner/owner123` and saves `storageState`), plus `chromium`
+  with a dependency on it. `auth.spec.ts` overrides `storageState` to start logged-out.
+- Seed identities: `owner/owner123`, `checker1/checker123`, `delivery1/delivery123`,
+  `admin/admin123`, `employee1/emp123`; route `R001 - Downtown Route`; customers
+  `C00001 Rajesh Kumar` / `C00002 Priya Sharma`; milk types rendered as `<name> (<volume> ml)`.
+
+## Specs
+
+`frontend/e2e/`: `auth.spec.ts`, `master-data.spec.ts`, `operations.spec.ts`,
+`token-books.spec.ts`, `delivery.spec.ts`, plus `helpers.ts` (`unique`, `uniquePhone`, `futureDate`)
+and `setup/owner.setup.ts`.
+
+## Pitfalls Learned (hard-won)
+
+- **Trailing-slash redirects + proxy**: FastAPI 307-redirects `/api/v1/routes` → `/api/v1/routes/`.
+  With Vite `changeOrigin: true` the browser follows the redirect straight to the backend origin and
+  gets CORS-blocked. `frontend/vite.config.ts` must keep `changeOrigin: false`.
+- **Native HTML5 validation blocks React errors**: form inputs use `required`/`min`/`minLength`, so
+  the browser blocks submit before `validate()` runs. All form pages with custom `validate()` must
+  use `<form noValidate>` or React validation messages are unreachable.
+- **Required asterisks break `getByLabel`**: labels render `Name*`, so `getByLabel("Name")` substring
+  matches `Name*` but `{ exact: true }` times out. Use anchored regexes like `getByLabel(/^Password/)`
+  to avoid colliding with `Confirm Password`.
+- **`selectOption` labels must be exact strings** — regex labels are not supported.
+- **Unordered queries reorder rows after UPDATE**: PostgreSQL returns an updated row at the end of the
+  heap when there is no `ORDER BY`. `getSessionDeliveries` had no ordering, so rows jumped around in
+  the UI after a status update (fixed with `ORDER BY DailyDelivery.id`).
+- **Duplicate-key E2E data**: delivery sessions are unique on `(route_id, delivery_date, shift)`.
+  E2E tests that create sessions must use distinct dates.
+- **Never run backend pytest against the dev DB**: `tests/conftest.py` defaults to
+  `USE_ACTUAL_DB=true` and `TEST_DB_URL=...milk_managemen_ai`, and its session fixture runs
+  `drop_all`/`create_all`. Running it wipes the dev/prod DB. Always set
+  `USE_ACTUAL_DB=false` (SQLite) or point `TEST_DB_URL` at a scratch Postgres database.

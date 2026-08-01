@@ -238,7 +238,7 @@ function UnplannedForm({ sessionId }: { sessionId: number }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 border-t border-slate-200 pt-4">
+    <form onSubmit={handleSubmit} noValidate className="space-y-4 border-t border-slate-200 pt-4">
       <div className="grid grid-cols-2 gap-4">
         <Select
           label="Customer Type"
@@ -358,7 +358,7 @@ function CashSalesSection({ sessionId, canEdit }: { sessionId: number; canEdit: 
   return (
     <div className="space-y-4">
       {canEdit && (
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 md:grid-cols-6 gap-4 items-end">
+        <form onSubmit={handleSubmit} noValidate className="grid grid-cols-2 md:grid-cols-6 gap-4 items-end">
           <Input label="Customer Name" required value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} error={errors.customer_name} />
           <Input label="Phone" value={form.customer_phone} onChange={(e) => setForm({ ...form, customer_phone: e.target.value })} error={errors.customer_phone} />
           <Select

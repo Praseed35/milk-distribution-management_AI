@@ -103,7 +103,7 @@ export default function TokenBookIssueFormPage() {
       <h1 className="text-xl font-semibold text-slate-800 mb-6">
         {isEdit ? "Edit Token Book Issue" : "Create Token Book Issue"}
       </h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 bg-white p-6 rounded-lg shadow">
         <Select
           label="Identity"
           required

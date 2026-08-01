@@ -47,7 +47,7 @@ export default function EmployeeCredentialsPage() {
     <div className="max-w-lg mx-auto">
       <h1 className="text-xl font-semibold text-slate-800 mb-2">Credentials</h1>
       <p className="text-sm text-slate-500 mb-6">{employee.employee_code} — {employee.name}</p>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 bg-white p-6 rounded-lg shadow">
         <Input label="Username" value={form.username ?? ""} onChange={(e) => setForm({ ...form, username: e.target.value })} error={errors.username} />
         <Input label="Password" type="password" value={form.password ?? ""} onChange={(e) => setForm({ ...form, password: e.target.value })} error={errors.password} />
         <Input label="Confirm Password" type="password" value={form.confirm_password} onChange={(e) => setForm({ ...form, confirm_password: e.target.value })} error={errors.confirm_password} />

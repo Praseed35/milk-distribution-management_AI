@@ -81,7 +81,7 @@ export default function CustomerFormPage() {
   return (
     <div className="max-w-lg mx-auto">
       <h1 className="text-xl font-semibold text-slate-800 mb-6">{isEdit ? "Edit Customer" : "Create Customer"}</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 bg-white p-6 rounded-lg shadow">
         <Input label="Customer Name" required value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} error={errors.customer_name} />
         <Input label="Primary Phone" required value={form.primary_phone} onChange={(e) => setForm({ ...form, primary_phone: e.target.value })} error={errors.primary_phone} maxLength={10} />
         <Input label="Alternate Phone" value={form.alternate_phone ?? ""} onChange={(e) => setForm({ ...form, alternate_phone: e.target.value })} error={errors.alternate_phone} maxLength={10} />

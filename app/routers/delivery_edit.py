@@ -259,6 +259,8 @@ def get_session_deliveries(
     if status:
         query = query.filter(DailyDelivery.delivery_status == status)
 
+    query = query.order_by(DailyDelivery.id)
+
     total = query.count()
     deliveries = query.offset(skip).limit(limit).all()
 

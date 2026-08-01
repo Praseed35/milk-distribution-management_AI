@@ -170,7 +170,7 @@ export default function DeliveryEditPage() {
           {!selected ? (
             <p className="text-sm text-slate-500">Select a delivery on the left to edit it.</p>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <div className="bg-slate-50 rounded-md p-3 text-sm text-slate-700">
                 Editing delivery for{" "}
                 <span className="font-medium">
