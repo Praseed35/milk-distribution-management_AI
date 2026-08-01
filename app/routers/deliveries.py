@@ -166,6 +166,25 @@ def record_dispatch(
 
 
 @router.post(
+    "/{session_id}/complete",
+    response_model=DeliverySessionResponse,
+)
+def complete_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+):
+    try:
+        return delivery_service.complete_session(
+            db,
+            session_id,
+        )
+    except SessionNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except InvalidSessionStatusError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post(
     "/{session_id}/close",
     response_model=DeliverySessionResponse,
 )
@@ -299,6 +318,17 @@ def submit_reconciliation(
     remarks: str | None = None,
     db: Session = Depends(get_db),
 ):
+    if total_cash_collected < 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Total cash collected cannot be negative",
+        )
+    if returned_milk < 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Returned milk cannot be negative",
+        )
+
     reconciliation = delivery_reconciliation.submit_reconciliation(
         db,
         session_id,

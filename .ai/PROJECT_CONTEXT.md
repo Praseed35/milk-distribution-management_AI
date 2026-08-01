@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the full lifecycle of a milk distribution business: master data (customers, routes, milk types, employees), subscriptions, delivery exceptions, token book management, **daily delivery sessions**, **reconciliation**, **payment management**, and **reports & analytics**. Serves a **React + TypeScript frontend** (`frontend/`, Sprint 9 in progress) via a REST API under `/api/v1`.
+A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the full lifecycle of a milk distribution business: master data (customers, routes, milk types, employees), subscriptions, delivery exceptions, token book management, **daily delivery sessions**, **reconciliation**, **payment management**, and **reports & analytics**. Serves a **React + TypeScript frontend** (`frontend/`, Phases 1–5 complete) via a REST API under `/api/v1`.
 
 **Business Domain**: Milk distribution cooperatives/dairies that deliver milk to customers on daily routes using subscription-based ordering. Customers receive physical "token books" (prepaid booklets) to collect milk. Delivery partners load milk, deliver to customers, collect tokens/cash, return leftover milk, and the session is reconciled.
 
@@ -17,14 +17,14 @@ A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the
 | Metric | Value |
 |--------|-------|
 | SQLAlchemy Models | **17 classes / 16 files** (10 original + DeliverySession, DailyDelivery, SessionEdit, TokenSheetWarning + CustomerBill, CustomerBillItem, CustomerPayment — CustomerBillItem lives in customer_bill.py) |
-| Alembic Migrations | **12** (9 original + payment tables + report indexes) |
+| Alembic Migrations | **13** (9 original + payment tables + report indexes + `delivery_exceptions.shift`) |
 | API Routers | **13** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, **deliveries**, **delivery_edit**, **payments**, **reports**) |
 | Service Modules | **15 service files + 8 reports files** (auth, user, route, customer, milk_type, employee, subscription, delivery_exception, token_book, delivery_service, delivery_registration, delivery_reconciliation, delivery_edit_service, payment + reports: route_delivery, revenue, collection, consumption, token_utilization, dashboard, common, cache) |
 | Schema Modules | **16** (original + delivery + payments + reports) |
 | Exception Modules | **11 + base** (no new exceptions for reports) |
-| Test Files | **12** (delivery + payments + reports added) |
-| Total API Endpoints | **~84** (39 original + 25 delivery + 14 payments + 6 reports) |
-| Frontend | **In progress — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) complete; Phases 3–8 pending** |
+| Test Files | **13** (delivery + delivery_edit + payments + reports added) |
+| Total API Endpoints | **~85** (39 original + 26 delivery + 14 payments + 6 reports) |
+| Frontend | **Phases 1–5 complete** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) [Sprint 9]; Phase 3 (Subscriptions & Exceptions) + Phase 4 (Token Books) [Sprint 10]; Phase 5 (Delivery Management) [specs/007]. Phases 6–8 (Payments, Reports, Polish) pending |
 
 ---
 
@@ -36,11 +36,11 @@ A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the
 | ORM | SQLAlchemy 2.0 | `declarative_base()` style (legacy pattern) |
 | Database | PostgreSQL | localhost:5432 |
 | DB Name | `milk_managemen_ai` | (note: typo is intentional in code) |
-| Migrations | Alembic | **12** migration files in `alembic/versions/` |
+| Migrations | Alembic | **13** migration files in `alembic/versions/` |
 | Auth | JWT (python-jose) | HS256, 30min expiry |
 | Password Hashing | bcrypt (passlib) | CryptContext with auto-deprecation |
 | Validation | Pydantic v2 | `model_config = ConfigDict(from_attributes=True)` |
-| Testing | pytest + TestClient | **12 test files, 343 tests passing** |
+| Testing | pytest + TestClient | **13 test files, 379 tests passing** |
 | Test DB | Same PostgreSQL DB | Transaction rollback isolation per test |
 
 ---
@@ -105,8 +105,8 @@ app/
 │   ├── employees.py (/employees), subscriptions.py (/subscriptions)
 │   ├── delivery_exceptions.py (/delivery-exceptions)
 │   ├── token_books.py (/token-books)
-│   ├── deliveries.py (/deliveries/sessions) -- 15 endpoints
-│   ├── delivery_edit.py (/deliveries) -- 10 endpoints
+│   ├── deliveries.py (/deliveries/sessions) -- 16 endpoints (incl. POST /{id}/complete)
+│   ├── delivery_edit.py (/deliveries) -- 10 endpoints (edit/reopen now OWNER-only server-side)
 │   ├── payments.py (/payments) -- 14 endpoints
 │   └── reports.py (/reports) -- 6 endpoints
 ├── services/               # 15 business logic modules + reports package (module-level functions)
@@ -146,14 +146,15 @@ tests/
 ├── test_subscriptions.py
 ├── test_delivery_exceptions.py
 ├── test_token_books.py
-├── test_daily_delivery.py     # 68 delivery tests (session, registration, reconciliation, edit)
+├── test_daily_delivery.py     # 81 delivery tests (session, registration, reconciliation, edit)
+├── test_delivery_edit.py      # 8 OWNER-RBAC tests (edit_delivery, reopen_session)
 ├── test_payments.py           # 33 payment management tests
 └── test_reports.py            # 24 reports tests (6 stories + RBAC + CSV + auth)
-# 12 test files, 343 tests total
+# 13 test files, 379 tests total
 
 alembic/
 ├── env.py                  # Imports Base.metadata, app.models for autogenerate
-└── versions/               # 12 migration files (chronological)
+└── versions/               # 13 migration files (chronological)
     ├── cd5183b67dae_initial_schema.py          # users, routes
     ├── de893ed2ffb7_add_customers_table.py     # customers
     ├── 4085a4134c96_add_milk_types_and_employees_tables.py
@@ -165,7 +166,8 @@ alembic/
     ├── 1154a3a25414_remove_is_active_in_update_customer_.py  # EMPTY migration (no upgrade/downgrade logic)
     ├── aeecd8f99d6d_merge_token_books_and_delivery_heads.py  # Merge heads
     ├── 6a0f9777a5cb_add_payment_management_tables.py         # customer_bills, customer_bill_items, customer_payments
-    └── 119aa199d5d7_add_report_indexes.py                    # report indexes
+    ├── 119aa199d5d7_add_report_indexes.py                    # report indexes
+    └── a1b2c3d4e5f6_add_shift_to_delivery_exceptions.py      # add nullable shift column (MORNING/EVENING) to delivery_exceptions
 ```
 
 ---
@@ -212,7 +214,7 @@ All tables use `is_active` boolean for soft-delete (never physically delete reco
 | Table | Key Columns | Relationships |
 |-------|-------------|---------------|
 | `subscriptions` | id, customer_id (FK), milk_type_id (FK), morning_quantity, evening_quantity, status, start_date, end_date, remarks, is_active, created_at, updated_at | Belongs to Customer and MilkType, has many DeliveryExceptions |
-| `delivery_exceptions` | id, subscription_id (FK), exception_type, start_date, end_date, reason, status, is_active, created_at, updated_at | Belongs to Subscription |
+| `delivery_exceptions` | id, subscription_id (FK), exception_type, shift (nullable: MORNING/EVENING — null = whole day), start_date, end_date, reason, status, is_active, created_at, updated_at | Belongs to Subscription |
 
 ### Token Book Tables
 
@@ -400,6 +402,7 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)       │
 | GET | `/deliveries/sessions/{id}` | Get session detail with deliveries list | N/A |
 | POST | `/deliveries/sessions/{id}/start` | Start session (record dispatch) - sets PLANNED->STARTED | N/A |
 | POST | `/deliveries/sessions/{id}/dispatch` | Record milk dispatch (total_milk_loaded) | N/A |
+| POST | `/deliveries/sessions/{id}/complete` | Mark session COMPLETED (STARTED->COMPLETED) — added in Phase 5 | N/A |
 | POST | `/deliveries/sessions/{id}/close` | Close session (COMPLETED->CLOSED, requires balanced reconciliation) | N/A |
 | **Checklist & Report** | | | |
 | GET | `/deliveries/sessions/{id}/checklist` | Get delivery checklist (customers, routes, quantities) | N/A |
@@ -430,7 +433,7 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)       │
 | POST | `/deliveries/session/{id}/reopen` | Reopen a closed session (owner only) | OWNER |
 | GET | `/deliveries/session/{id}/edit-history` | Get full edit history for a session | N/A |
 
-**Total: ~64 API endpoints across 12 routers**
+**Total: ~65 API endpoints across 12 routers**
 
 ---
 
@@ -453,7 +456,8 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)       │
 1. Temporarily modify a subscription's delivery (vacation, no_milk, holiday)
 2. Date overlap detection prevents conflicting exceptions for the same subscription
 3. End date must be >= start date
-4. Can be cancelled (sets status=CANCELLED)
+4. `shift` is optional (MORNING/EVENING); when set, the exception applies only to that shift — otherwise it applies to the whole day (used by session checklist generation)
+5. Can be cancelled (sets status=CANCELLED)
 
 ### Token Book System
 1. **Token Identity**: Unique token number assigned to customer + milk_type combination
@@ -470,7 +474,7 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)       │
 ### Delivery Session Lifecycle
 1. **Create**: A delivery session is created for a route + date + shift + delivery partner
 2. **Dispatch/Start**: Milk quantity loaded is recorded; session status becomes STARTED
-3. **Generate Delivery List**: Active subscriptions for the route generate DailyDelivery records (uses `Subscription.route_id` - **BUG: Subscription model has no route_id**)
+3. **Generate Delivery List**: Active subscriptions for the route generate DailyDelivery records (Phase 5 rewrite joins through `Customer.route_id`; planned_quantity = `morning_quantity`/`evening_quantity` per shift, zero-quantity subscriptions skipped, exceptions excluded by date+shift)
 4. **Deliver**: Delivery partner delivers milk, records status per customer:
    - DELIVERED (token sheet collected)
    - PENDING_TOKEN (delivered but token pending)
@@ -685,16 +689,21 @@ python scripts/seed.py  # Restore permanent seed data
 | Payment Management | 14 | 5 story + RBAC + auth | Bills, payments, outstanding calculation |
 | Reports & Analytics | 6 | 24 across 6 story areas + RBAC + CSV + auth | Route delivery, revenue, collection, consumption, token utilization, dashboard |
 
+### Completed (Frontend)
+
+| Priority | Module | Status |
+|----------|--------|--------|
+| Frontend Phase 3 | Subscriptions & Exceptions pages | ✅ Complete (Sprint 10) |
+| Frontend Phase 4 | Token Books pages | ✅ Complete (Sprint 10) |
+| Frontend Phase 5 | Delivery Management pages | ✅ Complete (specs/007: session list/create/detail, registration, reconciliation, close, reopen, edit history) |
+
 ### In Progress
 
 | Priority | Module | Reason |
 |----------|--------|--------|
-| Frontend Phase 3 | Subscriptions & Exceptions pages | React app in progress (Sprint 9) |
-| Frontend Phase 4 | Token Books pages | React app in progress (Sprint 9) |
-| Frontend Phase 5 | Delivery Management pages | React app in progress (Sprint 9) |
-| Frontend Phase 6 | Payments pages | React app in progress (Sprint 9) |
-| Frontend Phase 7 | Reports pages | React app in progress (Sprint 9) |
-| Frontend Phase 8 | Polish & testing | React app in progress (Sprint 9) |
+| Frontend Phase 6 | Payments pages | React app (next sprint) |
+| Frontend Phase 7 | Reports pages | React app |
+| Frontend Phase 8 | Polish & testing | React app |
 
 ### Not Started
 

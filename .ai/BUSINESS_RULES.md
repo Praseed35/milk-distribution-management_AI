@@ -80,8 +80,10 @@ A milk distribution business delivers milk to customers on fixed routes. Custome
 3. **No overlaps**: Cannot create overlapping exceptions for the same subscription
 4. **Single-day exception**: If end_date is null, it's a single-day exception (start_date == end_date for overlap check)
 5. **Overlap detection logic**: Two date ranges overlap if: `start_A <= end_B AND end_A >= start_B`
-6. **Status**: Defaults to "ACTIVE", cancellation sets status="CANCELLED"
-7. **Exception types**: VACATION, NO_MILK, HOLIDAY (defined in constants but stored as string)
+6. **Shift scoping (since migration a1b2c3d4e5f6)**: `shift` is optional (MORNING/EVENING). When set, the exception applies only to that shift; when null, it applies to the whole day. Overlap rules: same-shift exceptions cannot overlap; a whole-day exception cannot overlap another whole-day exception or any shift exception on the same dates; exceptions on different shifts can coexist on the same dates.
+7. **Checklist effect**: Session checklist generation excludes customers with an ACTIVE exception where `start_date ≤ session.delivery_date ≤ COALESCE(end_date, session.delivery_date)` and `shift IS NULL OR shift = session.shift`
+8. **Status**: Defaults to "ACTIVE", cancellation sets status="CANCELLED"
+9. **Exception types**: VACATION, NO_MILK, HOLIDAY (defined in constants but stored as string)
 
 ---
 

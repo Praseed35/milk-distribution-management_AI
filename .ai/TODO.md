@@ -4,14 +4,14 @@
 
 ---
 
-## Current State (Actual — July 31, 2026)
+## Current State (Actual — August 1, 2026)
 
-**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments), 7 (reports)
-**Tested Code**: All Sprints 1–7 ✅
-**Frontend**: Sprint 9 in progress — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) complete; Phases 3–8 pending
+**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments), 7 (reports); Frontend Phases 1–5
+**Tested Code**: All Sprints 1–7 ✅ (379 tests across 13 files)
+**Frontend**: Phase 1–2 (Sprint 9, commit d14589b4) + Phase 3–4 (Sprint 10, commit f536667f) + Phase 5 Delivery Management (specs/007, all tasks [X]) complete; Phases 6–8 pending
 **Untested Code**: None
 **Total Tables**: 17
-**Total API Endpoints**: ~84
+**Total API Endpoints**: ~85
 **Known Bugs**: 0
 
 ---
@@ -105,15 +105,24 @@
 - [ ] Route optimization suggestions
 - [ ] Anomaly detection (unusual orders, payments)
 
-### Sprint 9: Frontend - React (IN PROGRESS — Phase 1 & 2 COMPLETE ✅)
+### Sprint 9: Frontend - React Phases 1–2 (COMPLETED ✅, commit d14589b4)
 - [x] Phase 1: Backend prep (CORS, /api/v1 prefix, health) + frontend scaffold + auth + layout
 - [x] Phase 2: Master Data CRUD (routes, customers, milk types, employees, users)
-- [ ] Phase 3: Subscriptions & Exceptions pages
-- [ ] Phase 4: Token book pages
-- [ ] Phase 5: Delivery management pages (session lifecycle, registration, reconciliation)
-- [ ] Phase 6: Payment pages
-- [ ] Phase 7: Report pages
-- [ ] Phase 8: Polish & testing
+
+### Sprint 10: Frontend - React Phases 3–4 (COMPLETED ✅, commit f536667f)
+- [x] Phase 3: Subscriptions & Exceptions pages (T070-T083)
+- [x] Phase 4: Token book pages (T084-T099)
+
+### Phase 5: Delivery Management Pages (COMPLETED ✅ — specs/007, T001-T037)
+- [x] Backend fixes: `generate_delivery_list` rewrite (join via Customer, shift quantities, exception exclusion), `POST /deliveries/sessions/{id}/complete`, server-side OWNER RBAC on edit/reopen
+- [x] `frontend/src/pages/delivery/`: SessionListPage, SessionCreatePage, SessionDetailPage, DeliveryEditPage
+- [x] api + hooks + types for delivery-sessions and deliveries
+- [x] tests: `tests/test_delivery_edit.py` (8 OWNER-RBAC tests) + delivery-suite additions
+
+### Sprint 11: Frontend - React Phases 6–8 (NEXT — NOT STARTED)
+- [ ] Phase 6: Payment pages (T123-T131)
+- [ ] Phase 7: Report pages (T132-T146)
+- [ ] Phase 8: Polish & testing (T147-T158)
 
 ### Sprint 10: Testing and Deployment (NOT STARTED)
 - [ ] Comprehensive test coverage (target: 95%+)
@@ -140,12 +149,10 @@
 
 ## Immediate Next Steps (Priority Order)
 
-1. **🔴 HIGH**: Frontend Phase 3 — Subscriptions & Exceptions pages (T070-T083 in `specs/004-react-frontend/tasks.md`)
-2. **🔴 HIGH**: Frontend Phase 4 — Token Books pages (T084-T099)
-3. **🔴 HIGH**: Frontend Phase 5 — Delivery Management pages (T100-T122) — highest operational value
-4. **🟡 MEDIUM**: Frontend Phase 6 — Payments pages (T123-T131)
-5. **🟡 MEDIUM**: Frontend Phase 7 — Reports pages (T132-T146)
-6. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
-7. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
-8. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
-9. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)
+1. **🔴 HIGH**: Frontend Phase 6 — Payments pages (T123-T131 in `specs/004-react-frontend/tasks.md`)
+2. **🔴 HIGH**: Frontend Phase 7 — Reports pages (T132-T146)
+3. **🟡 MEDIUM**: Frontend Phase 8 — Polish & testing (T147-T158)
+4. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
+5. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
+6. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
+7. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)

@@ -208,6 +208,7 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)      │
 | id | INTEGER | PRIMARY KEY, INDEX | Auto-increment |
 | subscription_id | INTEGER | FK -> subscriptions.id, NOT NULL | |
 | exception_type | VARCHAR(20) | NOT NULL | VACATION/NO_MILK/HOLIDAY |
+| shift | VARCHAR(10) | NULLABLE | MORNING/EVENING; null = whole day (added in migration a1b2c3d4e5f6) |
 | start_date | TIMESTAMPTZ | NOT NULL | |
 | end_date | TIMESTAMPTZ | NULLABLE | None = single-day exception |
 | reason | VARCHAR(255) | NULLABLE | |
@@ -223,6 +224,7 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)      │
 - Subscription must exist and be active
 - end_date must be >= start_date
 - No overlapping exceptions for the same subscription
+- `shift` is optional: when set (MORNING/EVENING) the exception applies to that shift only; when null it applies to the whole day. Overlap logic considers shift (same-shift overlap vs whole-day overlap vs different-shift coexistence). Session checklist generation excludes customers with `status="ACTIVE"`, `is_active=true`, `start_date ≤ delivery_date ≤ COALESCE(end_date, delivery_date)`, and `shift IS NULL OR shift = session.shift`.
 - Cancellation sets is_active=False AND status="CANCELLED"
 
 **Overlap detection**: `_check_overlap()` helper checks for date range intersection.
@@ -510,6 +512,7 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)      │
 | 10 | aeecd8f99d6d | Merge token_books and delivery heads |
 | 11 | 6a0f9777a5cb | Add payment management tables (customer_bills, customer_bill_items, customer_payments) |
 | 12 | 119aa199d5d7 | Add report indexes (delivery_status, payment_date, bill_period_start) |
+| 13 | **a1b2c3d4e5f6** | **Add `shift` column (VARCHAR(10), nullable) to delivery_exceptions (MORNING/EVENING shift-scoped exceptions)** |
 
 ### Useful Commands
 ```bash

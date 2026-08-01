@@ -12,6 +12,7 @@ from app.constants.statuses import (
 )
 from app.models.customer import Customer
 from app.models.daily_delivery import DailyDelivery
+from app.models.delivery_exception import DeliveryException
 from app.models.delivery_session import DeliverySession
 from app.models.employee import Employee
 from app.models.milk_type import MilkType
@@ -323,6 +324,168 @@ class TestCreateSession:
         assert response.json()["shift"] == "EVENING"
 
 
+class TestCreateSessionChecklist:
+
+    def test_create_session_generates_checklist(
+        self, client: TestClient,
+        seed_route: Route,
+        seed_employee: Employee,
+        seed_customer: Customer,
+        seed_milk_type: MilkType,
+        seed_subscription_morning: Subscription,
+    ):
+        response = client.post("/deliveries/sessions/", json={
+            "route_id": seed_route.id,
+            "delivery_date": "2026-08-15",
+            "shift": "MORNING",
+            "delivery_partner_id": seed_employee.id,
+        })
+        assert response.status_code == 201
+
+        checklist = client.get(
+            f"/deliveries/sessions/{response.json()['id']}/checklist"
+        )
+        data = checklist.json()
+        assert data["total_expected"] == 1
+        assert data["customers"][0]["customer_id"] == seed_customer.id
+        assert data["customers"][0]["quantity"] == 2
+
+    def test_create_session_evening_uses_evening_quantity(
+        self, client: TestClient,
+        seed_route: Route,
+        seed_employee: Employee,
+        seed_customer: Customer,
+        seed_milk_type: MilkType,
+        seed_subscription_evening: Subscription,
+    ):
+        response = client.post("/deliveries/sessions/", json={
+            "route_id": seed_route.id,
+            "delivery_date": "2026-08-15",
+            "shift": "EVENING",
+            "delivery_partner_id": seed_employee.id,
+        })
+        assert response.status_code == 201
+
+        checklist = client.get(
+            f"/deliveries/sessions/{response.json()['id']}/checklist"
+        )
+        data = checklist.json()
+        assert data["total_expected"] == 1
+        assert data["customers"][0]["quantity"] == 3
+
+    def test_create_session_skips_zero_quantity_subscription(
+        self, client: TestClient,
+        seed_route: Route,
+        seed_employee: Employee,
+        seed_customer: Customer,
+        seed_customer2: Customer,
+        seed_milk_type: MilkType,
+        seed_subscription_morning: Subscription,
+        db_session: Session,
+    ):
+        zero_sub = Subscription(
+            customer_id=seed_customer2.id,
+            milk_type_id=seed_milk_type.id,
+            morning_quantity=0,
+            evening_quantity=0,
+            status="ACTIVE",
+            is_active=True,
+        )
+        db_session.add(zero_sub)
+        db_session.commit()
+
+        response = client.post("/deliveries/sessions/", json={
+            "route_id": seed_route.id,
+            "delivery_date": "2026-08-15",
+            "shift": "MORNING",
+            "delivery_partner_id": seed_employee.id,
+        })
+        assert response.status_code == 201
+
+        checklist = client.get(
+            f"/deliveries/sessions/{response.json()['id']}/checklist"
+        )
+        data = checklist.json()
+        assert data["total_expected"] == 1
+        assert data["customers"][0]["customer_id"] == seed_customer.id
+
+    def test_create_session_excludes_exception_customer(
+        self, client: TestClient,
+        seed_route: Route,
+        seed_employee: Employee,
+        seed_customer: Customer,
+        seed_milk_type: MilkType,
+        seed_subscription_morning: Subscription,
+        db_session: Session,
+    ):
+        from datetime import datetime
+
+        exc = DeliveryException(
+            subscription_id=seed_subscription_morning.id,
+            exception_type="VACATION",
+            start_date=datetime(2026, 8, 1),
+            end_date=datetime(2026, 8, 20),
+            reason="Family vacation",
+            status="ACTIVE",
+            is_active=True,
+        )
+        db_session.add(exc)
+        db_session.commit()
+
+        response = client.post("/deliveries/sessions/", json={
+            "route_id": seed_route.id,
+            "delivery_date": "2026-08-15",
+            "shift": "MORNING",
+            "delivery_partner_id": seed_employee.id,
+        })
+        assert response.status_code == 201
+
+        checklist = client.get(
+            f"/deliveries/sessions/{response.json()['id']}/checklist"
+        )
+        data = checklist.json()
+        assert data["total_expected"] == 0
+        assert data["customers"] == []
+
+    def test_create_session_exception_shift_mismatch_keeps_customer(
+        self, client: TestClient,
+        seed_route: Route,
+        seed_employee: Employee,
+        seed_customer: Customer,
+        seed_milk_type: MilkType,
+        seed_subscription_morning: Subscription,
+        db_session: Session,
+    ):
+        from datetime import datetime
+
+        exc = DeliveryException(
+            subscription_id=seed_subscription_morning.id,
+            exception_type="VACATION",
+            start_date=datetime(2026, 8, 1),
+            end_date=datetime(2026, 8, 20),
+            shift="EVENING",
+            reason="Evening only vacation",
+            status="ACTIVE",
+            is_active=True,
+        )
+        db_session.add(exc)
+        db_session.commit()
+
+        response = client.post("/deliveries/sessions/", json={
+            "route_id": seed_route.id,
+            "delivery_date": "2026-08-15",
+            "shift": "MORNING",
+            "delivery_partner_id": seed_employee.id,
+        })
+        assert response.status_code == 201
+
+        checklist = client.get(
+            f"/deliveries/sessions/{response.json()['id']}/checklist"
+        )
+        data = checklist.json()
+        assert data["total_expected"] == 1
+
+
 class TestListSessions:
 
     def test_list_sessions_empty(self, client: TestClient):
@@ -477,6 +640,58 @@ class TestRecordDispatch:
             json={"total_milk_loaded": 10.0},
         )
         assert response.status_code == 400
+
+
+class TestCompleteSession:
+
+    def test_complete_session_success(
+        self, client: TestClient, seed_started_session: DeliverySession
+    ):
+        response = client.post(
+            f"/deliveries/sessions/{seed_started_session.id}/complete"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "COMPLETED"
+
+    def test_complete_session_not_started(
+        self, client: TestClient, seed_session: DeliverySession
+    ):
+        response = client.post(
+            f"/deliveries/sessions/{seed_session.id}/complete"
+        )
+        assert response.status_code == 400
+
+    def test_complete_session_not_found(self, client: TestClient):
+        response = client.post("/deliveries/sessions/99999/complete")
+        assert response.status_code == 404
+
+    def test_close_after_complete_balanced(
+        self, client: TestClient,
+        seed_completed_session: DeliverySession,
+        seed_customer: Customer,
+        seed_milk_type: MilkType,
+        db_session: Session,
+    ):
+        delivery = DailyDelivery(
+            session_id=seed_completed_session.id,
+            customer_id=seed_customer.id,
+            milk_type_id=seed_milk_type.id,
+            planned_quantity=50,
+            delivered_quantity=50,
+            delivery_status="DELIVERED",
+            delivery_source="PLANNED",
+            shift=seed_completed_session.shift,
+            delivery_date=seed_completed_session.delivery_date,
+        )
+        db_session.add(delivery)
+        db_session.commit()
+
+        response = client.post(
+            f"/deliveries/sessions/{seed_completed_session.id}/close"
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "CLOSED"
 
 
 class TestCloseSession:
@@ -661,6 +876,26 @@ class TestValidateToken:
         })
         assert response.status_code == 400
 
+    def test_validate_token_activates_waiting_book(
+        self, client: TestClient,
+        seed_customer: Customer,
+        seed_milk_type: MilkType,
+        seed_token_book_issue: TokenBookIssue,
+        db_session: Session,
+    ):
+        response = client.post("/deliveries/validate-token", json={
+            "customer_id": seed_customer.id,
+            "milk_type_id": seed_milk_type.id,
+            "sheet_number": 1,
+        })
+        assert response.status_code == 200
+        assert response.json()["is_valid"] is True
+        db_session.expire_all()
+        book = db_session.query(TokenBookIssue).filter(
+            TokenBookIssue.id == seed_token_book_issue.id
+        ).first()
+        assert book.status == BookIssueStatus.ACTIVE
+
     def test_validate_token_sheet_out_of_range(
         self, client: TestClient,
         seed_customer: Customer,
@@ -710,6 +945,25 @@ class TestRegisterToken:
         data = response.json()
         assert data["sheet_registered"] is True
         assert data["delivery_id"] == seed_planned_delivery.id
+
+    def test_register_token_activates_waiting_book(
+        self, client: TestClient,
+        seed_planned_delivery: DailyDelivery,
+        seed_token_book_issue: TokenBookIssue,
+        db_session: Session,
+    ):
+        response = client.post(
+            f"/deliveries/{seed_planned_delivery.id}/register-token",
+            json={"token_sheet_number": 1},
+        )
+        assert response.status_code == 200
+        assert response.json()["sheet_registered"] is True
+        db_session.expire_all()
+        book = db_session.query(TokenBookIssue).filter(
+            TokenBookIssue.id == seed_token_book_issue.id
+        ).first()
+        assert book.status == BookIssueStatus.ACTIVE
+        assert book.current_sheet == 2
 
     def test_register_token_with_acknowledgment(
         self, client: TestClient,
@@ -890,6 +1144,32 @@ class TestSubmitReconciliation:
         data = response.json()
         assert "loaded_milk" in data
         assert "total_accounted" in data
+
+    def test_submit_reconciliation_negative_returned_milk(
+        self, client: TestClient,
+        seed_completed_session: DeliverySession,
+    ):
+        response = client.post(
+            f"/deliveries/sessions/{seed_completed_session.id}/reconciliation/submit",
+            params={
+                "total_cash_collected": 100.0,
+                "returned_milk": -2.0,
+            },
+        )
+        assert response.status_code == 400
+
+    def test_submit_reconciliation_negative_cash_collected(
+        self, client: TestClient,
+        seed_completed_session: DeliverySession,
+    ):
+        response = client.post(
+            f"/deliveries/sessions/{seed_completed_session.id}/reconciliation/submit",
+            params={
+                "total_cash_collected": -10.0,
+                "returned_milk": 5.0,
+            },
+        )
+        assert response.status_code == 400
 
 
 class TestCashSales:

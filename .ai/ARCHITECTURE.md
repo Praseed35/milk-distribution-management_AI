@@ -201,6 +201,9 @@ POST /deliveries/sessions/
     -> Check no duplicate session (route+date+shift)
     -> Create DeliverySession (status=PLANNED)
     -> db.add + commit + refresh
+    -> generate_delivery_list(db, session.id)  # Phase 5: rows generated on create
+       - planned_quantity from morning/evening_quantity per shift (0-qty skipped)
+       - excludes ACTIVE exceptions matching date + (shift IS NULL OR shift = session.shift)
   <- HTTP 201 with DeliverySessionResponse
 
 POST /deliveries/sessions/{id}/dispatch
@@ -209,6 +212,14 @@ POST /deliveries/sessions/{id}/dispatch
     -> Validate session exists and is PLANNED
     -> Validate dispatch not already recorded
     -> Set total_milk_loaded, status=STARTED
+    -> commit + refresh
+  <- HTTP 200 with DeliverySessionResponse
+
+POST /deliveries/sessions/{id}/complete   # Phase 5 addition
+  -> deliveries.py router
+  -> delivery_service.complete_session(db, session_id)
+    -> Validate session exists and is STARTED
+    -> Set status=COMPLETED
     -> commit + refresh
   <- HTTP 200 with DeliverySessionResponse
 
@@ -312,7 +323,7 @@ All models inherit from `Base`. Alembic uses `Base.metadata` for migration gener
 
 ## 9. Migration History
 
-12 migrations in chronological order:
+13 migrations in chronological order:
 
 | Migration | Description |
 |-----------|-------------|
@@ -328,6 +339,7 @@ All models inherit from `Base`. Alembic uses `Base.metadata` for migration gener
 | `aeecd8f99d6d` | Merge token_books and delivery heads |
 | `6a0f9777a5cb` | Add payment management tables (customer_bills, customer_bill_items, customer_payments) |
 | `119aa199d5d7` | Add report indexes |
+| `a1b2c3d4e5f6` | Add nullable `shift` column (MORNING/EVENING) to delivery_exceptions |
 
 ---
 
@@ -429,9 +441,60 @@ Used in schema validation patterns but not enforced as DB constraint.
 
 ---
 
-## 13. Frontend Readiness
+## 13. Frontend Architecture (React + TypeScript + Vite)
 
-**Current state**: Backend is ready for frontend integration. CORS is configured for `http://localhost:5173`, API prefix `/api/v1` is active with `GET /api/v1/health`, and legacy root routes are kept for backward compatibility. The React frontend is under active development (`frontend/`) — Phase 1 (Setup/Auth/Layout) and Phase 2 (Master Data CRUD) are complete; Phases 3–8 (Subscriptions, Token Books, Delivery, Payments, Reports, Polish) are pending.
+**Current state**: Phases 1–5 complete (Phases 6–8 pending). CORS configured for `http://localhost:5173`, API prefix `/api/v1` is primary. Backend fully ready for remaining frontend work.
+
+### Stack (verified in `frontend/package.json`)
+
+| Tool | Version |
+|------|---------|
+| React | ^19.2.8 |
+| TypeScript | ~6.0.2 |
+| Vite | ^8.2.0 (dev server port 5173, proxy `/api` → `http://localhost:8000`) |
+| Tailwind CSS | ^4.3.3 |
+| React Router | ^7.18.2 |
+| TanStack Query | ^5.101.4 |
+| axios | (baseURL `/api/v1`, Bearer token from localStorage `auth_token`, 401 → redirect `/login` with `return_url` in sessionStorage) |
+| react-hot-toast, @sentry/react (optional), oxlint | |
+
+### Layer Structure (types → api → hooks → pages)
+
+```
+frontend/src/
+├── types/          # 12 files — TS interfaces mirror Pydantic schemas exactly (snake_case)
+├── api/            # 12 files — axios functions, one per domain (+ client.ts)
+├── hooks/          # 10 files — TanStack Query wrappers (useXxx), expose useQuery/useMutation
+├── pages/          # One folder per domain:
+│   ├── routes/            RouteListPage, RouteFormPage
+│   ├── customers/         CustomerListPage, CustomerFormPage, CustomerDetailPage
+│   ├── milk-types/        MilkTypeListPage, MilkTypeFormPage
+│   ├── employees/         EmployeeListPage, EmployeeFormPage, EmployeeCredentialsPage
+│   ├── users/             UserListPage, UserCreatePage
+│   ├── subscriptions/     SubscriptionListPage, SubscriptionFormPage
+│   ├── delivery-exceptions/ ExceptionListPage, ExceptionFormPage
+│   ├── token-books/       TokenIdentity{List,Form}Page, TokenBookIssue{List,Form}Page, TokenBookPayment{List,Form}Page
+│   ├── delivery/          SessionListPage, SessionCreatePage, SessionDetailPage, DeliveryEditPage
+│   ├── payments/          (empty dir — Phase 6)
+│   ├── reports/           (empty dir — Phase 7)
+│   └── LoginPage, ChangePasswordPage, DashboardPage, ForbiddenPage, NotFoundPage
+├── components/
+│   ├── ui/         Button, Input, Select, Textarea, Badge, DataTable, PageHeader, LoadingSpinner, EmptyState, ConfirmDialog
+│   ├── layout/     AppLayout, Header, Sidebar (nav filtered by role)
+│   └── guards/     ProtectedRoute, RoleGuard
+├── providers/      AuthProvider, QueryProvider
+├── config/         permissions.ts — role-based navigation model
+└── lib/            constants.ts (SESSION/DELIVERY/PAYMENT/BOOK_ISSUE/RECONCILIATION statuses, SHIFTS, EXCEPTION_TYPES, PAGE_SIZE=50), utils.ts
+```
+
+### Key Conventions
+
+- **Query keys**: array-keyed; mutations invalidate `["<domain>"]`, `["session-detail", id]`, `["session-deliveries", id]`, `["reconciliation", id]` so detail pages stay live across PLANNED→STARTED→COMPLETED→CLOSED
+- **Envelope**: list endpoints use a `PaginatedResponse` envelope `{ data, total, page, page_size }` (first consumer: session list); some legacy endpoints return raw arrays (e.g. edit-history)
+- **Forms**: plain `useState` + `validate()` per convention (no form library); `Select` options loaded via hooks (`useRoutes`, `useEmployees` filtered to `role === "DELIVERY_PARTNER"`, etc.)
+- **RBAC**: `RoleGuard roles={[...]}` wraps routes in `App.tsx`; OWNER-only pages (delivery edit/reopen) also enforced server-side (`require_role(["OWNER"])` on the backend endpoints)
+- **Errors**: mutations surface `err.response?.data?.detail` via `toast.error`; 409 optimistic-lock conflicts → "reload and retry"
+- **Status display**: `lib/constants.ts` STATUS_BADGE_MAP drives Badge styling; statuses are string unions in `types/`
 
 **Remaining backend gaps for production**:
 - SECRET_KEY should move to environment variable

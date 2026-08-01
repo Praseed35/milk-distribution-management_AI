@@ -1,6 +1,8 @@
 from datetime import date
+from datetime import datetime
 
 from sqlalchemy import and_
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.customer import Customer
@@ -8,7 +10,6 @@ from app.models.delivery_exception import DeliveryException
 from app.models.delivery_session import DeliverySession
 from app.models.daily_delivery import DailyDelivery
 from app.models.employee import Employee
-from app.models.milk_type import MilkType
 from app.models.route import Route
 from app.models.subscription import Subscription
 
@@ -91,6 +92,10 @@ def create_session(
     )
 
     db.add(session)
+    db.flush()
+
+    generate_delivery_list(db, session.id)
+
     db.commit()
     db.refresh(session)
 
@@ -229,6 +234,37 @@ def start_session(
     return record_dispatch(db, session_id, total_milk_loaded)
 
 
+def complete_session(
+    db: Session,
+    session_id: int,
+) -> DeliverySession:
+    """
+    Complete a delivery session (STARTED -> COMPLETED).
+
+    Args:
+        db: SQLAlchemy database session.
+        session_id: Session ID.
+
+    Returns:
+        Updated DeliverySession.
+
+    Raises:
+        SessionNotFoundError: If session not found.
+        InvalidSessionStatusError: If session not in STARTED status.
+    """
+    session = get_session(db, session_id)
+
+    if session.status != SessionStatus.STARTED:
+        raise InvalidSessionStatusError(session.status, SessionStatus.STARTED)
+
+    session.status = SessionStatus.COMPLETED
+
+    db.commit()
+    db.refresh(session)
+
+    return session
+
+
 def close_session(
     db: Session,
     session_id: int,
@@ -303,38 +339,52 @@ def generate_delivery_list(
         .all()
     )
 
-    today = session.delivery_date
-    exceptions = (
-        db.query(DeliveryException)
-        .filter(
-            and_(
-                DeliveryException.exception_date == today,
-                DeliveryException.is_active == True,
-            )
-        )
-        .all()
-    )
-
-    exception_customer_ids = {exc.customer_id for exc in exceptions}
+    delivery_date = session.delivery_date
+    day_start = datetime.combine(delivery_date, datetime.min.time())
+    day_end = datetime.combine(delivery_date, datetime.max.time())
 
     deliveries = []
     for sub in subscriptions:
-        if sub.customer_id in exception_customer_ids:
+        if session.shift == "MORNING":
+            planned_quantity = sub.morning_quantity
+        else:
+            planned_quantity = sub.evening_quantity
+
+        if not planned_quantity or planned_quantity <= 0:
             continue
 
-        customer = db.query(Customer).filter(Customer.id == sub.customer_id).first()
-        if not customer or not customer.is_active:
-            continue
-
-        milk_type = db.query(MilkType).filter(MilkType.id == sub.milk_type_id).first()
+        milk_type = sub.milk_type
         if not milk_type or not milk_type.is_active:
+            continue
+
+        active_exception = (
+            db.query(DeliveryException.id)
+            .filter(
+                and_(
+                    DeliveryException.subscription_id == sub.id,
+                    DeliveryException.status == "ACTIVE",
+                    DeliveryException.is_active == True,
+                    DeliveryException.start_date <= day_end,
+                    or_(
+                        DeliveryException.end_date.is_(None),
+                        DeliveryException.end_date >= day_start,
+                    ),
+                    or_(
+                        DeliveryException.shift.is_(None),
+                        DeliveryException.shift == session.shift,
+                    ),
+                )
+            )
+            .first()
+        )
+        if active_exception:
             continue
 
         delivery = DailyDelivery(
             session_id=session_id,
             customer_id=sub.customer_id,
             milk_type_id=sub.milk_type_id,
-            planned_quantity=sub.quantity,
+            planned_quantity=planned_quantity,
             delivered_quantity=0,
             delivery_status="PLANNED",
             delivery_source="PLANNED",
@@ -345,9 +395,6 @@ def generate_delivery_list(
         db.add(delivery)
         deliveries.append(delivery)
 
-    db.commit()
-
-    for delivery in deliveries:
-        db.refresh(delivery)
+    db.flush()
 
     return deliveries

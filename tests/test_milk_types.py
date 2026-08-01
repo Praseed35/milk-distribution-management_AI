@@ -71,6 +71,29 @@ class TestCreateMilkType:
         assert response.status_code == 200
         assert response.json()["description"] is None
 
+    def test_create_milk_type_with_unit_price(self, client):
+        response = client.post(
+            "/milk-types/",
+            json={
+                "milk_name": "Premium Milk",
+                "volume_ml": 500,
+                "unit_price": 45.50,
+            }
+        )
+        assert response.status_code == 200
+        assert float(response.json()["unit_price"]) == 45.5
+
+    def test_create_milk_type_negative_price(self, client):
+        response = client.post(
+            "/milk-types/",
+            json={
+                "milk_name": "Neg Price",
+                "volume_ml": 500,
+                "unit_price": -1,
+            }
+        )
+        assert response.status_code == 422
+
 
 class TestGetMilkTypes:
 
@@ -187,6 +210,21 @@ class TestUpdateMilkType:
         )
         assert response.status_code == 200
         assert response.json()["volume_ml"] == 2000
+
+    def test_update_milk_type_unit_price(
+        self, client, seed_milk_type
+    ):
+        response = client.put(
+            f"/milk-types/{seed_milk_type.id}",
+            json={
+                "milk_name": "Full Cream Milk",
+                "volume_ml": 500,
+                "unit_price": 58.75,
+                "description": "Price updated"
+            }
+        )
+        assert response.status_code == 200
+        assert float(response.json()["unit_price"]) == 58.75
 
 
 class TestDeleteMilkType:

@@ -1,6 +1,6 @@
 # CURRENT_STATE.md - Project Snapshot
 
-> Snapshot of the project as of July 31, 2026 — Sprints 1–7 complete, Frontend Phases 1–2 complete.
+> Snapshot of the project as of August 1, 2026 — Sprints 1–7 backend complete; Frontend Phases 1–5 complete (Phase 3–4 = Sprint 10, Phase 5 Delivery Management per specs/007).
 
 ---
 
@@ -9,13 +9,13 @@
 | Metric | Value |
 |--------|-------|
 | Total Tables | **17** (16 model files: users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_identities, token_book_issues, token_book_payments, delivery_sessions, daily_deliveries, session_edits, token_sheet_warnings, customer_bills, customer_bill_items, customer_payments) |
-| Total API Endpoints | **~84** (39 original + 25 delivery + 14 payment + 6 reports) |
-| Total Test Files | **12** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, daily_delivery, payments, reports) |
-| Test Status | **343 passed, 0 failed** |
+| Total API Endpoints | **~85** (39 original + 26 delivery + 14 payment + 6 reports) |
+| Total Test Files | **13** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, daily_delivery, delivery_edit, payments, reports) |
+| Test Status | **379 passed, 0 failed** |
 | Sprints Code-Complete | **7** (1, 2, 3, 4-core, 5, 6, 7) |
 | Sprints Tested | **7** (1, 2, 3, 4-core, 5, 6, 7) |
-| Frontend Status | **Sprint 9 in progress** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) complete; Phases 3–8 pending |
-| Next Priority | **Frontend Phase 3: Subscriptions & Exceptions pages** |
+| Frontend Status | **Phases 1–5 complete** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) [Sprint 9]; Phase 3 (Subscriptions & Exceptions) + Phase 4 (Token Books) [Sprint 10]; Phase 5 (Delivery Management) [specs/007]. Phases 6–8 (Payments, Reports, Polish) pending |
+| Next Priority | **Frontend Phase 6: Payments pages** (then Phase 7 Reports, Phase 8 Polish) |
 | Database | PostgreSQL localhost:5432/milk_managemen_ai |
 | Framework | FastAPI |
 | ORM | SQLAlchemy 2.0 |
@@ -37,10 +37,10 @@
 | app/routers/ | 13 | API routers (incl. deliveries, delivery_edit, payments, reports) |
 | app/services/ | 15 + reports/ (8) | Business logic (incl. delivery_*, payment_service, reports) |
 | app/exceptions/ | 11 + base | Custom exceptions (incl. delivery, delivery_edit, payment) |
-| tests/ | 12 test files + conftest | Test suite (343 tests) |
-| alembic/versions/ | 12 | Database migrations (merged heads + payment tables + report indexes) |
+| tests/ | 13 test files + conftest | Test suite (379 tests) |
+| alembic/versions/ | 13 | Database migrations (merged heads + payment tables + report indexes + delivery_exceptions.shift) |
 | scripts/ | 2 | Seed + test helper |
-| frontend/src/ | ~40 files | React SPA (Phases 1–2 complete) |
+| frontend/src/ | ~90 files | React SPA (Phases 1–5 complete; payments/reports page dirs empty) |
 
 ---
 
@@ -53,7 +53,7 @@
 5. **Read `API_REFERENCE.md`** for endpoint details
 6. **Run tests**: `pytest` to verify everything works
 7. **Start coding**: Follow patterns in existing services/routers
-8. **Frontend work**: Read `specs/004-react-frontend/tasks.md` for the task list (Phases 3–8 pending)
+8. **Frontend work**: Phases 1–5 complete. Read `specs/004-react-frontend/tasks.md` (Phase 6–8 pending) and `specs/007-delivery-management-pages/tasks.md` (Phase 5 — all done) for task lists
 
 ---
 
@@ -145,10 +145,11 @@ alembic upgrade head
 
 ## Last Updated
 
-- Date: July 31, 2026
-- Last Sprint Code Completed: Sprint 7 (Reports & Analytics)
+- Date: August 1, 2026
+- Last Sprint Code Completed: Sprint 7 (Reports & Analytics) — backend; Sprint 10 (Frontend Phases 3–4) + Phase 5 Delivery Management — frontend
 - Last Sprint Fully Tested: Sprint 7 (Reports & Analytics)
-- Test Files: 12 (delivery + payments + reports)
+- Test Files: 13 (delivery + delivery_edit + payments + reports)
+- Tests: 379
 - Tables: 17
-- Frontend: Phases 1–2 complete (of 8)
+- Frontend: Phases 1–5 complete (of 8)
 - Known Bugs: 0

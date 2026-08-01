@@ -583,6 +583,7 @@ List exceptions for a specific subscription.
 {
     "subscription_id": "integer (> 0)",
     "exception_type": "string (1-20 chars)",
+    "shift": "string|null (MORNING|EVENING — null = whole day)",
     "start_date": "datetime",
     "end_date": "datetime|null",
     "reason": "string|null (max 255 chars)"
@@ -593,7 +594,7 @@ List exceptions for a specific subscription.
 
 **Errors**:
 - 404: Subscription not found
-- 400: Inactive subscription, end_date < start_date, overlapping exception
+- 400: Inactive subscription, invalid shift, end_date < start_date, overlapping exception
 
 ---
 
@@ -852,6 +853,20 @@ Record milk dispatch. Sets total_milk_loaded and changes status to STARTED.
 **Errors**:
 - 404: Session not found
 - 400: Session not in PLANNED status, or dispatch already recorded
+
+---
+
+### POST `/deliveries/sessions/{session_id}/complete`
+
+Mark a started session as COMPLETED (STARTED -> COMPLETED). Added during Phase 5 (Delivery Management pages).
+
+**Request Body**: none
+
+**Response 200**: Updated DeliverySession (status=COMPLETED)
+
+**Errors**:
+- 404: Session not found
+- 400: Session not in STARTED status
 
 ---
 

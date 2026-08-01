@@ -32,6 +32,10 @@ import TokenBookIssueListPage from "./pages/token-books/TokenBookIssueListPage";
 import TokenBookIssueFormPage from "./pages/token-books/TokenBookIssueFormPage";
 import TokenBookPaymentListPage from "./pages/token-books/TokenBookPaymentListPage";
 import TokenBookPaymentFormPage from "./pages/token-books/TokenBookPaymentFormPage";
+import SessionListPage from "./pages/delivery/SessionListPage";
+import SessionCreatePage from "./pages/delivery/SessionCreatePage";
+import SessionDetailPage from "./pages/delivery/SessionDetailPage";
+import DeliveryEditPage from "./pages/delivery/DeliveryEditPage";
 
 export default function App() {
   return (
@@ -60,9 +64,30 @@ export default function App() {
               <Route path="milk-types/new" element={<MilkTypeFormPage />} />
               <Route path="milk-types/:id/edit" element={<MilkTypeFormPage />} />
               <Route path="employees" element={<EmployeeListPage />} />
-              <Route path="employees/new" element={<EmployeeFormPage />} />
-              <Route path="employees/:id/edit" element={<EmployeeFormPage />} />
-              <Route path="employees/:id/credentials" element={<EmployeeCredentialsPage />} />
+              <Route
+                path="employees/new"
+                element={
+                  <RoleGuard roles={["OWNER"]}>
+                    <EmployeeFormPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="employees/:id/edit"
+                element={
+                  <RoleGuard roles={["OWNER"]}>
+                    <EmployeeFormPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="employees/:id/credentials"
+                element={
+                  <RoleGuard roles={["OWNER"]}>
+                    <EmployeeCredentialsPage />
+                  </RoleGuard>
+                }
+              />
               <Route path="users" element={<UserListPage />} />
               <Route path="users/new" element={<UserCreatePage />} />
               <Route path="subscriptions" element={<SubscriptionListPage />} />
@@ -147,6 +172,38 @@ export default function App() {
                 element={
                   <RoleGuard roles={["OWNER", "ADMIN"]}>
                     <TokenBookPaymentFormPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="delivery/sessions"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN", "CHECKER"]}>
+                    <SessionListPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="delivery/sessions/new"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN", "CHECKER"]}>
+                    <SessionCreatePage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="delivery/sessions/:id"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN", "CHECKER"]}>
+                    <SessionDetailPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="delivery/sessions/:id/edit"
+                element={
+                  <RoleGuard roles={["OWNER"]}>
+                    <DeliveryEditPage />
                   </RoleGuard>
                 }
               />

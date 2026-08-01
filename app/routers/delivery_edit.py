@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.core.auth import get_current_user
+from app.core.roles import require_role
 from app.models.user import User
 
 from app.schemas.delivery_session import (
@@ -200,7 +200,7 @@ def edit_delivery(
     delivery_id: int,
     edit_request: DailyDeliveryEditRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(["OWNER"])),
 ):
     try:
         return delivery_edit_service.edit_delivery(
@@ -277,7 +277,7 @@ def reopen_session(
     session_id: int,
     reopen: DeliverySessionReopen,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(["OWNER"])),
 ):
     try:
         return delivery_edit_service.reopen_session(

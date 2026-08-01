@@ -24,6 +24,50 @@ from app.exceptions.delivery import SessionNotFoundError
 from app.constants.statuses import BookIssueStatus, DeliveryStatus, DeliverySource
 
 
+def _activate_waiting_book(
+    db: Session,
+    customer_id: int,
+    milk_type_id: int,
+    token_book_issue_id: int | None = None,
+) -> list[TokenBookIssue]:
+    """
+    Promote the first WAITING book to ACTIVE on first token use.
+
+    A book issue starts in WAITING state and must be activated before
+    token sheets can be registered. When a registration/validation is
+    attempted without an ACTIVE book, the oldest WAITING book for the
+    customer and milk type is auto-activated so the flow does not block.
+
+    Returns the activated book(s), or an empty list when none qualify.
+    """
+    query = (
+        db.query(TokenBookIssue)
+        .filter(
+            and_(
+                TokenBookIssue.customer_id == customer_id,
+                TokenBookIssue.milk_type_id == milk_type_id,
+                TokenBookIssue.status == BookIssueStatus.WAITING,
+                TokenBookIssue.is_active == True,
+            )
+        )
+        .order_by(TokenBookIssue.issue_date, TokenBookIssue.id)
+    )
+
+    if token_book_issue_id:
+        query = query.filter(TokenBookIssue.id == token_book_issue_id)
+
+    waiting_books = query.all()
+    if not waiting_books:
+        return []
+
+    book = waiting_books[0]
+    book.status = BookIssueStatus.ACTIVE
+    db.commit()
+    db.refresh(book)
+
+    return [book]
+
+
 def validate_token_sheet(
     db: Session,
     customer_id: int,
@@ -73,6 +117,14 @@ def validate_token_sheet(
     book_issues = query.all()
 
     if not book_issues:
+        book_issues = _activate_waiting_book(
+            db,
+            customer_id,
+            milk_type_id,
+            token_book_issue_id,
+        )
+
+    if not book_issues:
         raise InvalidTokenSheetError(
             f"No active token book found for customer {customer_id} "
             f"with milk type {milk_type_id}"
@@ -110,17 +162,18 @@ def validate_token_sheet(
         raise SheetAlreadyUsedError(sheet_number, target_book.id)
 
     current_sheet = target_book.current_sheet
-    if sheet_number != current_sheet:
-        if sheet_number > current_sheet:
+    expected_sheet = current_sheet if current_sheet > 0 else 1
+    if sheet_number != expected_sheet:
+        if sheet_number > expected_sheet:
             warnings.append(
                 {
                     "code": "NON_SEQUENTIAL_SHEET",
                     "message": (
                         f"Sheet #{sheet_number} skips ahead. "
-                        f"Sheet #{current_sheet} not yet used."
+                        f"Sheet #{expected_sheet} not yet used."
                     ),
                     "severity": "WARNING",
-                    "expected_sheet": current_sheet,
+                    "expected_sheet": expected_sheet,
                 }
             )
         else:
@@ -129,10 +182,10 @@ def validate_token_sheet(
                     "code": "SHEET_OUT_OF_ORDER",
                     "message": (
                         f"Sheet #{sheet_number} is out of order. "
-                        f"Current sheet is #{current_sheet}."
+                        f"Current sheet is #{expected_sheet}."
                     ),
                     "severity": "WARNING",
-                    "expected_sheet": current_sheet,
+                    "expected_sheet": expected_sheet,
                 }
             )
         requires_acknowledgment = True

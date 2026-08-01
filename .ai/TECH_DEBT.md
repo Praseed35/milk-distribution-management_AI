@@ -28,7 +28,7 @@ SECRET_KEY = "milk_management_secret_key_2026"
 Should use environment variable. Security risk in production.
 
 ### 2. No Delivery Session Tests ✅ RESOLVED
-Now has 24 tests across session lifecycle, registration, reconciliation, and edit. 343 tests total across all 12 test files.
+Session lifecycle/registration/reconciliation/edit are covered. Phase 5 added `tests/test_delivery_edit.py` (8 OWNER-RBAC tests) and expanded `test_daily_delivery.py` (81 tests). **379 tests total across 13 test files.**
 
 ### 3. Database Name Typo
 Database is `milk_managemen_ai` (missing 't' in management). Consistent everywhere but confusing.
@@ -118,3 +118,9 @@ Empty migration — `upgrade()` and `downgrade()` do nothing. Either implement t
 - SECRET_KEY hardening (move to env variable)
 - Comprehensive payment ledger / sheet-level token register
 - Rate limiting
+
+### Frontend-Specific (from Phase 5 delivery work)
+- `frontend/src/pages/payments/` and `frontend/src/pages/reports/` exist but are empty (Phases 6–7)
+- Root `README.md` and `frontend/README.md` are stale — they report Sprint 9 / Phases 3–4 pending; actual code has Phases 1–5 (README still says React 18/Vite 5, actual React 19.2.8/Vite 8.2.0)
+- `.ai/` docs previously reported 12 migrations / 343 tests — now 13 migrations / 379 tests (verified Aug 1, 2026)
+- Phase 5 work (specs/007, delivery pages, backend fixes, new tests) is present in the working tree; HEAD commit `f536667f` message only covers Sprint 10 Phases 3–4 — verify `git status` before assuming Phase 5 is committed

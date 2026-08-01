@@ -30,6 +30,7 @@ def create(
     new_milk_type = MilkType(
         milk_name=milk_type.milk_name,
         volume_ml=milk_type.volume_ml,
+        unit_price=milk_type.unit_price,
         description=milk_type.description
     )
 
@@ -108,6 +109,7 @@ def update_by_id(
 
     milk_type_to_update.milk_name = milk_type.milk_name
     milk_type_to_update.volume_ml = milk_type.volume_ml
+    milk_type_to_update.unit_price = milk_type.unit_price
     milk_type_to_update.description = milk_type.description
 
     db.commit()
