@@ -51,7 +51,7 @@ Warning Log ❌ (alert dashboard, Sprint 4 remaining)
     ↓
 AI Business Intelligence ❌ (Sprint 8)
     ↓
-Frontend Phases 6-8 ❌ (Payments, Reports, Polish — Phases 1-5 complete ✅)
+Frontend Phases 7-8 ❌ (Reports, Polish — Phases 1-6 complete ✅)
 ```
 
 ## Dependency Graph (Actual)
@@ -71,7 +71,7 @@ Sprint 4 Core (Token Book) ✅ TESTED (independent)
 Sprint 9 (Frontend Phases 1–2) ✅ COMMITTED (d14589b4)
 Sprint 10 (Frontend Phases 3–4) ✅ COMMITTED (f536667f)
 Phase 5 (Delivery Management) ✅ IMPLEMENTED (specs/007 all tasks [X])
-  ├─ Phase 6 (Payments) ❌ PENDING
+Phase 6 (Payment Management) ✅ IMPLEMENTED (specs/008 all tasks [X])
   ├─ Phase 7 (Reports) ❌ PENDING
   └─ Phase 8 (Polish & Testing) ❌ PENDING
 Sprint 11 (Testing & Deployment) - needs everything

@@ -36,6 +36,12 @@ import SessionListPage from "./pages/delivery/SessionListPage";
 import SessionCreatePage from "./pages/delivery/SessionCreatePage";
 import SessionDetailPage from "./pages/delivery/SessionDetailPage";
 import DeliveryEditPage from "./pages/delivery/DeliveryEditPage";
+import PaymentListPage from "./pages/payments/PaymentListPage";
+import PaymentFormPage from "./pages/payments/PaymentFormPage";
+import BillListPage from "./pages/payments/BillListPage";
+import BillGeneratePage from "./pages/payments/BillGeneratePage";
+import OutstandingPage from "./pages/payments/OutstandingPage";
+import BillDetailPage from "./pages/payments/BillDetailPage";
 
 export default function App() {
   return (
@@ -53,9 +59,30 @@ export default function App() {
             >
               <Route index element={<DashboardPage />} />
               <Route path="change-password" element={<ChangePasswordPage />} />
-              <Route path="routes" element={<RouteListPage />} />
-              <Route path="routes/new" element={<RouteFormPage />} />
-              <Route path="routes/:id/edit" element={<RouteFormPage />} />
+              <Route
+                path="routes"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <RouteListPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="routes/new"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <RouteFormPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="routes/:id/edit"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <RouteFormPage />
+                  </RoleGuard>
+                }
+              />
               <Route path="customers" element={<CustomerListPage />} />
               <Route path="customers/new" element={<CustomerFormPage />} />
               <Route path="customers/:id" element={<CustomerDetailPage />} />
@@ -204,6 +231,54 @@ export default function App() {
                 element={
                   <RoleGuard roles={["OWNER"]}>
                     <DeliveryEditPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="payments"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <PaymentListPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="payments/new"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <PaymentFormPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="payments/bills"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <BillListPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="payments/bills/generate"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <BillGeneratePage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="payments/bills/:id"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <BillDetailPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="payments/outstanding"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <OutstandingPage />
                   </RoleGuard>
                 }
               />

@@ -71,13 +71,13 @@
 - Demand forecasting ❌
 - Anomaly detection ❌
 
-## Frontend (Sprint 9 — COMPLETED; Sprint 10 — COMPLETED; Phase 5 — COMPLETED)
+## Frontend (Sprint 9 — COMPLETED; Sprint 10 — COMPLETED; Phase 5 — COMPLETED; Phase 6 — COMPLETED)
 - **Phase 1: Setup, Auth, Layout — COMPLETED ✅** (backend CORS + /api/v1 prefix + health endpoint; Vite scaffold; auth flow; layout; UI primitives) [Sprint 9, commit d14589b4]
 - **Phase 2: Master Data CRUD — COMPLETED ✅** (Routes, Customers, Milk Types, Employees, Users) [Sprint 9]
 - **Phase 3: Subscriptions & Exceptions — COMPLETED ✅** (T070-T083: SubscriptionListPage/FormPage, ExceptionListPage/FormPage, CHECKER read-only) [Sprint 10, commit f536667f]
 - **Phase 4: Token Books — COMPLETED ✅** (T084-T099: TokenIdentityList/Form, TokenBookIssueList/Form, TokenBookPaymentList/Form, CHECKER read-only) [Sprint 10]
 - **Phase 5: Delivery Management — COMPLETED ✅** (specs/007 T001-T037: SessionListPage, SessionCreatePage, SessionDetailPage [dispatch/checklist/registration/reconciliation/close/reopen], DeliveryEditPage; backend fixes: `generate_delivery_list` rewrite, `POST /deliveries/sessions/{id}/complete`, server-side OWNER RBAC on edit/reopen; 8 new tests in `tests/test_delivery_edit.py`)
-- Phase 6: Payments — NOT STARTED ❌ (T123-T131) — `frontend/src/pages/payments/` dir exists but empty
+- **Phase 6: Payment Management — COMPLETED ✅** (specs/008 T001-T020: PaymentListPage [US1+US4 filters], PaymentFormPage [ADVANCE/BILL_PAYMENT + unpaid-bill picker], BillListPage, BillGeneratePage [multi-select + duplicate-period warning], OutstandingPage [per-customer `useQueries`], BillDetailPage [line items + applied payments + status update with ConfirmDialog]; all six routes RoleGuard OWNER/ADMIN; 7 E2E tests in `frontend/e2e/payments.spec.ts`)
 - Phase 7: Reports — NOT STARTED ❌ (T132-T146) — `frontend/src/pages/reports/` dir exists but empty
 - Phase 8: Polish & Testing — NOT STARTED ❌ (T147-T158)
 
@@ -93,8 +93,9 @@
 | Tested Modules | 14 (master data + subscriptions + exceptions + tokens + delivery + payments + reports) |
 | Untested Modules | 0 |
 | Known Bugs | 0 |
-| Test Files | 13 (delivery + delivery_edit + payments + reports) |
-| Tests | 379 |
+| Backend Test Files | 13 (delivery + delivery_edit + payments + reports) |
+| Backend Tests | 379 |
+| Frontend E2E (Playwright) | 38 specs across 7 spec files (`frontend/e2e/`), incl. 7 for payments |
 | Tables | 17 (no new tables — reports use aggregation queries) |
 | API Endpoints | ~85 (6 report endpoints added + complete endpoint) |
 | Version | 1.0 Development |

@@ -162,15 +162,15 @@ pytest
 | admin | admin123 | OWNER |
 | employee1 | emp123 | EMPLOYEE |
 
-## Frontend Status (Sprint 9)
+## Frontend Status (Sprint 12)
 
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 1 | Setup, Auth, Layout | ✅ Complete |
 | 2 | Master Data CRUD (Routes, Customers, Milk Types, Employees, Users) | ✅ Complete |
-| 3 | Subscriptions & Exceptions | ⏳ Pending |
-| 4 | Token Books | ⏳ Pending |
-| 5 | Delivery Sessions | ⏳ Pending |
-| 6 | Payments | ⏳ Pending |
+| 3 | Subscriptions & Exceptions | ✅ Complete |
+| 4 | Token Books | ✅ Complete |
+| 5 | Delivery Sessions | ✅ Complete |
+| 6 | Payments (Payment ledger, Bill generate/list/detail, Outstanding balances) | ✅ Complete |
 | 7 | Reports | ⏳ Pending |
 | 8 | Testing | ⏳ Pending |

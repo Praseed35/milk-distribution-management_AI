@@ -31,12 +31,21 @@ export const RECONCILIATION_STATUS = {
   PENDING: { label: "Pending", color: "amber" },
 } as const;
 
+export const BILL_STATUS = {
+  PENDING: { label: "Pending", color: "slate" },
+  PARTIAL: { label: "Partial", color: "amber" },
+  PAID: { label: "Paid", color: "emerald" },
+  OVERDUE: { label: "Overdue", color: "red" },
+  CANCELLED: { label: "Cancelled", color: "red" },
+} as const;
+
 export const STATUS_BADGE_MAP: Record<string, { label: string; color: string }> = {
   ...SESSION_STATUS,
   ...DELIVERY_STATUS,
   ...PAYMENT_STATUS,
   ...BOOK_ISSUE_STATUS,
   ...RECONCILIATION_STATUS,
+  ...BILL_STATUS,
   ACTIVE: { label: "Active", color: "emerald" },
   INACTIVE: { label: "Inactive", color: "slate" },
 };
@@ -50,5 +59,7 @@ export const SHIFTS = ["MORNING", "EVENING"] as const;
 export const EXCEPTION_TYPES = ["VACATION", "NO_MILK", "HOLIDAY"] as const;
 
 export const PAYMENT_MODES = ["CASH", "UPI", "CARD", "CHEQUE", "BANK_TRANSFER"] as const;
+
+export const PAYMENT_TYPES = ["ADVANCE", "BILL_PAYMENT"] as const;
 
 export const TOKEN_PAYMENT_MODES = ["PREPAID", "POSTPAID"] as const;

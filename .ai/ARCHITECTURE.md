@@ -443,7 +443,7 @@ Used in schema validation patterns but not enforced as DB constraint.
 
 ## 13. Frontend Architecture (React + TypeScript + Vite)
 
-**Current state**: Phases 1–5 complete (Phases 6–8 pending). CORS configured for `http://localhost:5173`, API prefix `/api/v1` is primary. Backend fully ready for remaining frontend work.
+**Current state**: Phases 1–6 complete (Phases 7–8 pending). CORS configured for `http://localhost:5173`, API prefix `/api/v1` is primary. Backend fully ready for remaining frontend work. Playwright E2E suite (`frontend/e2e/`, 38 specs) boots an isolated backend on :8001 (DB `milk_management_e2e`) + Vite on :5174.
 
 ### Stack (verified in `frontend/package.json`)
 
@@ -462,9 +462,9 @@ Used in schema validation patterns but not enforced as DB constraint.
 
 ```
 frontend/src/
-├── types/          # 12 files — TS interfaces mirror Pydantic schemas exactly (snake_case)
-├── api/            # 12 files — axios functions, one per domain (+ client.ts)
-├── hooks/          # 10 files — TanStack Query wrappers (useXxx), expose useQuery/useMutation
+├── types/          # 13 files — TS interfaces mirror Pydantic schemas exactly (snake_case)
+├── api/            # 13 files — axios functions, one per domain (+ client.ts)
+├── hooks/          # 11 files — TanStack Query wrappers (useXxx), expose useQuery/useMutation
 ├── pages/          # One folder per domain:
 │   ├── routes/            RouteListPage, RouteFormPage
 │   ├── customers/         CustomerListPage, CustomerFormPage, CustomerDetailPage
@@ -475,7 +475,7 @@ frontend/src/
 │   ├── delivery-exceptions/ ExceptionListPage, ExceptionFormPage
 │   ├── token-books/       TokenIdentity{List,Form}Page, TokenBookIssue{List,Form}Page, TokenBookPayment{List,Form}Page
 │   ├── delivery/          SessionListPage, SessionCreatePage, SessionDetailPage, DeliveryEditPage
-│   ├── payments/          (empty dir — Phase 6)
+│   ├── payments/          PaymentListPage, PaymentFormPage, BillListPage, BillGeneratePage, OutstandingPage, BillDetailPage
 │   ├── reports/           (empty dir — Phase 7)
 │   └── LoginPage, ChangePasswordPage, DashboardPage, ForbiddenPage, NotFoundPage
 ├── components/

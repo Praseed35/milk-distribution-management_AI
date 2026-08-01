@@ -119,8 +119,8 @@ Empty migration — `upgrade()` and `downgrade()` do nothing. Either implement t
 - Comprehensive payment ledger / sheet-level token register
 - Rate limiting
 
-### Frontend-Specific (from Phase 5 delivery work)
-- `frontend/src/pages/payments/` and `frontend/src/pages/reports/` exist but are empty (Phases 6–7)
-- Root `README.md` and `frontend/README.md` are stale — they report Sprint 9 / Phases 3–4 pending; actual code has Phases 1–5 (README still says React 18/Vite 5, actual React 19.2.8/Vite 8.2.0)
+### Frontend-Specific
+- `frontend/src/pages/reports/` exists but is empty (Phase 7 only) — payments pages are complete (Phase 6, specs/008)
+- Root `README.md` and `frontend/README.md` historically stale — README frontend status now reflects Phases 1–6 (still says React 19/Vite 8, which matches actual React 19.2.8/Vite 8.2.0)
 - `.ai/` docs previously reported 12 migrations / 343 tests — now 13 migrations / 379 tests (verified Aug 1, 2026)
-- Phase 5 work (specs/007, delivery pages, backend fixes, new tests) is present in the working tree; HEAD commit `f536667f` message only covers Sprint 10 Phases 3–4 — verify `git status` before assuming Phase 5 is committed
+- Backend `/payments/*` router (like most routers) has **no** `get_current_user` dependency — only `reports` and `auth` attach it. Client-side RoleGuards are the only enforcement on payment pages (noted in specs/008 spec.md). Fix backend-wide RBAC in a later sprint.

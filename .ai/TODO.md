@@ -6,9 +6,9 @@
 
 ## Current State (Actual — August 1, 2026)
 
-**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments), 7 (reports); Frontend Phases 1–5
-**Tested Code**: All Sprints 1–7 ✅ (379 tests across 13 files)
-**Frontend**: Phase 1–2 (Sprint 9, commit d14589b4) + Phase 3–4 (Sprint 10, commit f536667f) + Phase 5 Delivery Management (specs/007, all tasks [X]) complete; Phases 6–8 pending
+**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments), 7 (reports); Frontend Phases 1–6
+**Tested Code**: All Sprints 1–7 ✅ (379 tests across 13 files) + Frontend E2E (38 Playwright specs)
+**Frontend**: Phase 1–2 (Sprint 9, commit d14589b4) + Phase 3–4 (Sprint 10, commit f536667f) + Phase 5 Delivery Management (specs/007, all tasks [X]) + Phase 6 Payment Management (specs/008, all tasks [X]) complete; Phases 7–8 pending
 **Untested Code**: None
 **Total Tables**: 17
 **Total API Endpoints**: ~85
@@ -119,8 +119,13 @@
 - [x] api + hooks + types for delivery-sessions and deliveries
 - [x] tests: `tests/test_delivery_edit.py` (8 OWNER-RBAC tests) + delivery-suite additions
 
-### Sprint 11: Frontend - React Phases 6–8 (NEXT — NOT STARTED)
-- [ ] Phase 6: Payment pages (T123-T131)
+### Phase 6: Payment Management Pages (COMPLETED ✅ — specs/008, T001-T020)
+- [x] `frontend/src/pages/payments/`: PaymentListPage (filters), PaymentFormPage, BillListPage, BillGeneratePage, OutstandingPage, BillDetailPage
+- [x] `api/payments.ts` + `hooks/usePayments.ts` + `types/payment.ts` + `PAYMENT_TYPES`/`BILL_STATUS` constants
+- [x] Six routes registered in `App.tsx`, all `<RoleGuard roles={["OWNER","ADMIN"]}>`
+- [x] tests: 7 E2E specs in `frontend/e2e/payments.spec.ts` (advance/bill payment, bill generate, outstanding, status update, RBAC)
+
+### Sprint 12: Frontend - React Phases 7–8 (NEXT — NOT STARTED)
 - [ ] Phase 7: Report pages (T132-T146)
 - [ ] Phase 8: Polish & testing (T147-T158)
 
@@ -149,10 +154,10 @@
 
 ## Immediate Next Steps (Priority Order)
 
-1. **🔴 HIGH**: Frontend Phase 6 — Payments pages (T123-T131 in `specs/004-react-frontend/tasks.md`)
-2. **🔴 HIGH**: Frontend Phase 7 — Reports pages (T132-T146)
-3. **🟡 MEDIUM**: Frontend Phase 8 — Polish & testing (T147-T158)
-4. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
+1. **🔴 HIGH**: Frontend Phase 7 — Reports pages (T132-T146 in `specs/004-react-frontend/tasks.md`)
+2. **🔴 HIGH**: Frontend Phase 8 — Polish & testing (T147-T158)
+3. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
+4. **🟡 MEDIUM**: Backend-wide RBAC on `/payments/*` (and other) routers — only `reports`/`auth` use `get_current_user` (see specs/008 spec.md)
 5. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
 6. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
 7. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)

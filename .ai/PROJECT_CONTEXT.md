@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the full lifecycle of a milk distribution business: master data (customers, routes, milk types, employees), subscriptions, delivery exceptions, token book management, **daily delivery sessions**, **reconciliation**, **payment management**, and **reports & analytics**. Serves a **React + TypeScript frontend** (`frontend/`, Phases 1–5 complete) via a REST API under `/api/v1`.
+A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the full lifecycle of a milk distribution business: master data (customers, routes, milk types, employees), subscriptions, delivery exceptions, token book management, **daily delivery sessions**, **reconciliation**, **payment management**, and **reports & analytics**. Serves a **React + TypeScript frontend** (`frontend/`, Phases 1–6 complete) via a REST API under `/api/v1`.
 
 **Business Domain**: Milk distribution cooperatives/dairies that deliver milk to customers on daily routes using subscription-based ordering. Customers receive physical "token books" (prepaid booklets) to collect milk. Delivery partners load milk, deliver to customers, collect tokens/cash, return leftover milk, and the session is reconciled.
 
@@ -24,7 +24,7 @@ A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the
 | Exception Modules | **11 + base** (no new exceptions for reports) |
 | Test Files | **13** (delivery + delivery_edit + payments + reports added) |
 | Total API Endpoints | **~85** (39 original + 26 delivery + 14 payments + 6 reports) |
-| Frontend | **Phases 1–5 complete** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) [Sprint 9]; Phase 3 (Subscriptions & Exceptions) + Phase 4 (Token Books) [Sprint 10]; Phase 5 (Delivery Management) [specs/007]. Phases 6–8 (Payments, Reports, Polish) pending |
+| Frontend | **Phases 1–6 complete** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) [Sprint 9]; Phase 3 (Subscriptions & Exceptions) + Phase 4 (Token Books) [Sprint 10]; Phase 5 (Delivery Management) [specs/007]; Phase 6 (Payment Management) [specs/008]. Phases 7–8 (Reports, Polish) pending |
 
 ---
 
@@ -696,13 +696,13 @@ python scripts/seed.py  # Restore permanent seed data
 | Frontend Phase 3 | Subscriptions & Exceptions pages | ✅ Complete (Sprint 10) |
 | Frontend Phase 4 | Token Books pages | ✅ Complete (Sprint 10) |
 | Frontend Phase 5 | Delivery Management pages | ✅ Complete (specs/007: session list/create/detail, registration, reconciliation, close, reopen, edit history) |
+| Frontend Phase 6 | Payments pages | ✅ Complete (specs/008: payment list/form, bill generate/list/detail, outstanding balances, OWNER/ADMIN role guard, 7 E2E specs) |
 
 ### In Progress
 
 | Priority | Module | Reason |
 |----------|--------|--------|
-| Frontend Phase 6 | Payments pages | React app (next sprint) |
-| Frontend Phase 7 | Reports pages | React app |
+| Frontend Phase 7 | Reports pages | React app (next sprint) |
 | Frontend Phase 8 | Polish & testing | React app |
 
 ### Not Started
