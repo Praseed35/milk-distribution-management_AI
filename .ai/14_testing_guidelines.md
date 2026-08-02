@@ -512,6 +512,7 @@ From `frontend/`:
 npx playwright test        # headless, single worker
 npx playwright test --ui   # interactive UI
 npx playwright test e2e/delivery.spec.ts   # single spec
+npm run test:e2e           # full suite — 45 tests green (setup-owner + chromium)
 ```
 
 ## Architecture
@@ -519,19 +520,31 @@ npx playwright test e2e/delivery.spec.ts   # single spec
 - **Isolated database** `milk_management_e2e` — never the dev/prod DB `milk_managemen_ai`.
 - Two `webServer` entries in `frontend/playwright.config.ts` boot everything per run:
   1. `scripts/e2e_backend.py` — FastAPI on port **8001**; on startup it drops/creates tables and
-     seeds from `scripts/seed.py`, so every run starts from a known state.
+     seeds from `scripts/seed.py`, so every run starts from a known state. It also sets
+     `REPORT_CACHE_DISABLED=1`, which makes `app/services/reports/cache.py` (module-level
+     `CACHE_ENABLED` flag) no-op `get()`/`set()` so the in-memory 300s report cache — keyed by
+     user with no invalidation on mutation — never serves stale zero-session data during E2E runs.
   2. Vite dev server on port **5174**, proxying `/api` → `http://localhost:8001`.
 - `projects`: `setup-owner` (logs in as `owner/owner123` and saves `storageState`), plus `chromium`
   with a dependency on it. `auth.spec.ts` overrides `storageState` to start logged-out.
-- Seed identities: `owner/owner123`, `checker1/checker123`, `delivery1/delivery123`,
-  `admin/admin123`, `employee1/emp123`; route `R001 - Downtown Route`; customers
-  `C00001 Rajesh Kumar` / `C00002 Priya Sharma`; milk types rendered as `<name> (<volume> ml)`.
+- Seed identities: `owner` = OWNER (`owner123`), `checker1` = CHECKER (`checker123`),
+  `delivery1` = DELIVERY_PARTNER (`delivery123`), `admin` = OWNER (`admin123`),
+  `employee1` = EMPLOYEE (`emp123`); route `R001 - Downtown Route`; customers
+  `C00001 Rajesh Kumar` / `C00002 Priya Sharma` (C00001 has a VACATION exception
+  today→today+2, so no deliveries today; `C00011 Karthik Rao` — "Small Pack Milk"
+  2L MORNING/1L EVENING — is used for today's bill/payment tests); milk types
+  rendered as `<name> (<volume> ml)`.
 
 ## Specs
 
-`frontend/e2e/`: `auth.spec.ts`, `master-data.spec.ts`, `operations.spec.ts`,
-`token-books.spec.ts`, `delivery.spec.ts`, plus `helpers.ts` (`unique`, `uniquePhone`, `futureDate`)
-and `setup/owner.setup.ts`.
+`frontend/e2e/` (8 spec files, 45 tests): `auth.spec.ts`, `master-data.spec.ts`,
+`operations.spec.ts`, `token-books.spec.ts`, `delivery.spec.ts`, `payments.spec.ts`,
+`reports.spec.ts` (7 tests: dashboard today-session KPIs, route-delivery aggregation + "Balanced"
+badge + totals + CSV download, consumption breakdown at `/reports/consumption/1`, revenue +
+collection aging buckets (sum to balance), token utilization threshold flagging, role restrictions
+for CHECKER/EMPLOYEE, DELIVERY_PARTNER own-route scope), plus `helpers.ts` (`unique`,
+`uniquePhone`, `futureDate`) and `setup/owner.setup.ts`. Login assertions in `owner.setup.ts`,
+`auth.spec.ts`, and `payments.spec.ts` now point to `/reports/dashboard` (the new index redirect).
 
 ## Pitfalls Learned (hard-won)
 
@@ -554,3 +567,7 @@ and `setup/owner.setup.ts`.
   `USE_ACTUAL_DB=true` and `TEST_DB_URL=...milk_managemen_ai`, and its session fixture runs
   `drop_all`/`create_all`. Running it wipes the dev/prod DB. Always set
   `USE_ACTUAL_DB=false` (SQLite) or point `TEST_DB_URL` at a scratch Postgres database.
+- **Report cache can serve stale E2E data**: `app/services/reports/cache.py` caches report
+  responses in memory for 300s, keyed by user, with no invalidation on delivery/payment mutation.
+  E2E always boots with `REPORT_CACHE_DISABLED=1` (see Architecture above); a fresh E2E run that
+  forgets this flag can assert against stale zero-session data.

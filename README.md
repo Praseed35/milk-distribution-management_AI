@@ -149,7 +149,9 @@ See `.ai/API_REFERENCE.md` for the complete endpoint reference (~84 endpoints).
 ## Testing
 
 ```bash
-pytest
+pytest                       # backend test suite (379 tests)
+cd frontend
+npm run test:e2e             # Playwright E2E (45 tests; auto-starts isolated backend on :8001)
 ```
 
 ## Default Users (after seeding)
@@ -162,7 +164,7 @@ pytest
 | admin | admin123 | OWNER |
 | employee1 | emp123 | EMPLOYEE |
 
-## Frontend Status (Sprint 12)
+## Frontend Status (Sprint 13)
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -172,5 +174,7 @@ pytest
 | 4 | Token Books | ✅ Complete |
 | 5 | Delivery Sessions | ✅ Complete |
 | 6 | Payments (Payment ledger, Bill generate/list/detail, Outstanding balances) | ✅ Complete |
-| 7 | Reports | ⏳ Pending |
-| 8 | Testing | ⏳ Pending |
+| 7 | Reports (Operational Dashboard, Route Delivery, Revenue, Consumption, Token Utilization, Collection Efficiency + CSV export) | ✅ Complete |
+| 8 | Polish & Testing | ⏳ Pending |
+
+The full Playwright E2E suite (`cd frontend && npm run test:e2e`) is green — **45 tests across 8 spec files**, including 7 for reports (`frontend/e2e/reports.spec.ts`). The E2E backend (`scripts/e2e_backend.py`) runs on :8001 against an isolated `milk_management_e2e` database (dropped/recreated/seeded each run) and sets `REPORT_CACHE_DISABLED=1` so report endpoints always return fresh data.

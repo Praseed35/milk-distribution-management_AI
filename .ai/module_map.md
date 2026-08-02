@@ -1,4 +1,4 @@
-# Module Map (As of July 31, 2026)
+# Module Map (As of August 2, 2026)
 
 ## Tested Modules ✅ (with test coverage)
 
@@ -51,7 +51,22 @@ Warning Log ❌ (alert dashboard, Sprint 4 remaining)
     ↓
 AI Business Intelligence ❌ (Sprint 8)
     ↓
-Frontend Phases 7-8 ❌ (Reports, Polish — Phases 1-6 complete ✅)
+Frontend Phase 8 ❌ (Polish & Testing — Phases 1-7 complete ✅)
+```
+
+## Frontend Reports API Module (Phase 7 ✅ IMPLEMENTED)
+
+```
+Frontend reports module (specs/009, commit 4489d6a)
+    frontend/src/api/reports.ts — consumes all 6 backend /reports/* endpoints:
+        getDashboard                 → GET /reports/dashboard
+        getRouteDelivery             → GET /reports/route-delivery
+        getRevenue                   → GET /reports/revenue
+        getConsumption(customerId)   → GET /reports/customer/{customerId}/consumption
+        getTokenUtilization          → GET /reports/token-utilization
+        getCollectionEfficiency      → GET /reports/collection-efficiency
+        downloadReportCsv(path, params, filename) → ?format=csv blob + anchor download
+    consumers: hooks/useReports.ts (TanStack Query, refresh in query keys) → pages/reports/*
 ```
 
 ## Dependency Graph (Actual)
@@ -72,7 +87,7 @@ Sprint 9 (Frontend Phases 1–2) ✅ COMMITTED (d14589b4)
 Sprint 10 (Frontend Phases 3–4) ✅ COMMITTED (f536667f)
 Phase 5 (Delivery Management) ✅ IMPLEMENTED (specs/007 all tasks [X])
 Phase 6 (Payment Management) ✅ IMPLEMENTED (specs/008 all tasks [X])
-  ├─ Phase 7 (Reports) ❌ PENDING
+Phase 7 (Reports Pages) ✅ IMPLEMENTED (specs/009 all tasks [X], commit 4489d6a)
   └─ Phase 8 (Polish & Testing) ❌ PENDING
 Sprint 11 (Testing & Deployment) - needs everything
 ```

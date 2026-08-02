@@ -1,4 +1,4 @@
-# Feature Status (As of August 1, 2026 — Updated)
+# Feature Status (As of August 2, 2026 — Updated)
 
 ## Backend
 
@@ -62,7 +62,7 @@
 - Token book utilization (sheets used/remaining, low threshold flags) ✅
 - Operational dashboard (session counts, deliveries, flagged issues) ✅
 - CSV export (all list endpoints via ?format=csv) ✅
-- In-memory cache (configurable TTL, bypass with ?refresh=true) ✅
+- In-memory cache (configurable TTL, bypass with ?refresh=true; module-level `REPORT_CACHE_DISABLED=1` env var disables `get()`/`set()` entirely — used by E2E to avoid stale zero-session data) ✅
 - RBAC enforcement (OWNER=all, ADMIN/CHECKER=operational, DELIVERY_PARTNER=own route) ✅
 - Alembic migration (indexes on delivery_status, payment_date, bill_period_start) ✅
 - 24 tests across 6 story areas + RBAC + CSV + auth ✅
@@ -71,14 +71,14 @@
 - Demand forecasting ❌
 - Anomaly detection ❌
 
-## Frontend (Sprint 9 — COMPLETED; Sprint 10 — COMPLETED; Phase 5 — COMPLETED; Phase 6 — COMPLETED)
+## Frontend (Sprint 9 — COMPLETED; Sprint 10 — COMPLETED; Phase 5 — COMPLETED; Phase 6 — COMPLETED; Phase 7 — COMPLETED)
 - **Phase 1: Setup, Auth, Layout — COMPLETED ✅** (backend CORS + /api/v1 prefix + health endpoint; Vite scaffold; auth flow; layout; UI primitives) [Sprint 9, commit d14589b4]
 - **Phase 2: Master Data CRUD — COMPLETED ✅** (Routes, Customers, Milk Types, Employees, Users) [Sprint 9]
 - **Phase 3: Subscriptions & Exceptions — COMPLETED ✅** (T070-T083: SubscriptionListPage/FormPage, ExceptionListPage/FormPage, CHECKER read-only) [Sprint 10, commit f536667f]
 - **Phase 4: Token Books — COMPLETED ✅** (T084-T099: TokenIdentityList/Form, TokenBookIssueList/Form, TokenBookPaymentList/Form, CHECKER read-only) [Sprint 10]
 - **Phase 5: Delivery Management — COMPLETED ✅** (specs/007 T001-T037: SessionListPage, SessionCreatePage, SessionDetailPage [dispatch/checklist/registration/reconciliation/close/reopen], DeliveryEditPage; backend fixes: `generate_delivery_list` rewrite, `POST /deliveries/sessions/{id}/complete`, server-side OWNER RBAC on edit/reopen; 8 new tests in `tests/test_delivery_edit.py`)
 - **Phase 6: Payment Management — COMPLETED ✅** (specs/008 T001-T020: PaymentListPage [US1+US4 filters], PaymentFormPage [ADVANCE/BILL_PAYMENT + unpaid-bill picker], BillListPage, BillGeneratePage [multi-select + duplicate-period warning], OutstandingPage [per-customer `useQueries`], BillDetailPage [line items + applied payments + status update with ConfirmDialog]; all six routes RoleGuard OWNER/ADMIN; 7 E2E tests in `frontend/e2e/payments.spec.ts`)
-- Phase 7: Reports — NOT STARTED ❌ (T132-T146) — `frontend/src/pages/reports/` dir exists but empty
+- **Phase 7: Reports — COMPLETED ✅** (specs/009 T001-T021, commit 4489d6a: `frontend/src/types/reports.ts` [all report interfaces + params]; `api/reports.ts` [getDashboard, getRouteDelivery, getRevenue, getConsumption, getTokenUtilization, getCollectionEfficiency + `downloadReportCsv` using `format=csv` + blob download]; `hooks/useReports.ts` [TanStack Query, `refresh` in query keys]; `components/reports/` [KpiCard, PresetFilter, TrendBadge, UtilizationBar, AgingBuckets]; `pages/reports/` [DashboardPage, RouteDeliveryReportPage, RevenueReportPage, ConsumptionReportPage, TokenUtilizationPage, CollectionEfficiencyPage]; index `/` → `<Navigate to="/reports/dashboard" replace />`; RoleGuards match backend RBAC — dashboard+route-delivery OWNER/ADMIN/CHECKER/DELIVERY_PARTNER, revenue OWNER only, consumption OWNER/ADMIN/CHECKER, token-utilization+collection-efficiency OWNER/ADMIN; old `pages/DashboardPage.tsx` placeholder deleted; 7 E2E tests in `frontend/e2e/reports.spec.ts`)
 - Phase 8: Polish & Testing — NOT STARTED ❌ (T147-T158)
 
 ## Testing and Deployment
@@ -95,7 +95,7 @@
 | Known Bugs | 0 |
 | Backend Test Files | 13 (delivery + delivery_edit + payments + reports) |
 | Backend Tests | 379 |
-| Frontend E2E (Playwright) | 38 specs across 7 spec files (`frontend/e2e/`), incl. 7 for payments |
+| Frontend E2E (Playwright) | 45 specs across 8 spec files (`frontend/e2e/`), incl. 7 for payments + 7 for reports |
 | Tables | 17 (no new tables — reports use aggregation queries) |
 | API Endpoints | ~85 (6 report endpoints added + complete endpoint) |
 | Version | 1.0 Development |

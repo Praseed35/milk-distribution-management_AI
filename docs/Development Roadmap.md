@@ -593,12 +593,12 @@ Each milestone represents a measurable project achievement.
 
 * React Frontend (Phase 1: Setup + Auth + Layout ✅)
 * React Frontend (Phase 2: Master Data CRUD ✅)
-* React Frontend (Phase 3: Subscriptions & Exceptions ⏳)
-* React Frontend (Phase 4: Token Books ⏳)
-* React Frontend (Phase 5: Delivery Sessions ⏳)
-* React Frontend (Phase 6: Payments ⏳)
-* React Frontend (Phase 7: Reports ⏳)
-* React Frontend (Phase 8: Testing ⏳)
+* React Frontend (Phase 3: Subscriptions & Exceptions ✅)
+* React Frontend (Phase 4: Token Books ✅)
+* React Frontend (Phase 5: Delivery Sessions ✅)
+* React Frontend (Phase 6: Payments ✅)
+* React Frontend (Phase 7: Reports — Dashboard, Route Delivery, Revenue, Consumption, Token Utilization, Collection Efficiency + CSV ✅) [Sprint 13, specs/009-reports-pages]
+* React Frontend (Phase 8: Polish & Testing ⏳ — E2E automation already running: 45 Playwright tests green)
 
 ## Sprint 10 – Testing and Deployment ❌ Not Started
 

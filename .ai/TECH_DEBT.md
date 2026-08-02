@@ -120,7 +120,7 @@ Empty migration — `upgrade()` and `downgrade()` do nothing. Either implement t
 - Rate limiting
 
 ### Frontend-Specific
-- `frontend/src/pages/reports/` exists but is empty (Phase 7 only) — payments pages are complete (Phase 6, specs/008)
+- Frontend Phase 7 (reports pages) is complete; the 300s in-memory report cache (`app/services/reports/cache.py`) has no invalidation on delivery/payment mutation — `REPORT_CACHE_DISABLED=1` exists for E2E; production may need cache invalidation on writes (payments pages are complete, Phase 6 specs/008)
 - Root `README.md` and `frontend/README.md` historically stale — README frontend status now reflects Phases 1–6 (still says React 19/Vite 8, which matches actual React 19.2.8/Vite 8.2.0)
 - `.ai/` docs previously reported 12 migrations / 343 tests — now 13 migrations / 379 tests (verified Aug 1, 2026)
 - Backend `/payments/*` router (like most routers) has **no** `get_current_user` dependency — only `reports` and `auth` attach it. Client-side RoleGuards are the only enforcement on payment pages (noted in specs/008 spec.md). Fix backend-wide RBAC in a later sprint.

@@ -1173,7 +1173,9 @@ Get full edit history for a session.
 
 ## Reports
 
-All report endpoints require authentication. Date filtering supports preset strings (`today`, `yesterday`, `this_week`, `last_week`, `this_month`, `last_month`, `this_year`) or explicit `from_date`/`to_date`. All list endpoints accept `?format=csv` for CSV export and `?refresh=true` to bypass cache.
+> All report endpoints require authentication. Date filtering supports preset strings (`today`, `yesterday`, `this_week`, `last_week`, `this_month`, `last_month`, `this_year`) or explicit `from_date`/`to_date`. All list endpoints accept `?format=csv` for CSV export and `?refresh=true` to bypass cache.
+>
+> **Frontend consumers** (Phase 7, commit 4489d6a): `frontend/src/api/reports.ts` wraps all 6 endpoints below (plus `downloadReportCsv`); see `module_map.md` for the consumer chain (`api/reports.ts` → `hooks/useReports.ts` → `pages/reports/*`).
 
 ### GET `/reports/route-delivery`
 

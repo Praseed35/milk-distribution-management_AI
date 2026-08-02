@@ -4,11 +4,11 @@
 
 ---
 
-## Current State (Actual — August 1, 2026)
+## Current State (Actual — August 2, 2026)
 
-**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments), 7 (reports); Frontend Phases 1–6
-**Tested Code**: All Sprints 1–7 ✅ (379 tests across 13 files) + Frontend E2E (38 Playwright specs)
-**Frontend**: Phase 1–2 (Sprint 9, commit d14589b4) + Phase 3–4 (Sprint 10, commit f536667f) + Phase 5 Delivery Management (specs/007, all tasks [X]) + Phase 6 Payment Management (specs/008, all tasks [X]) complete; Phases 7–8 pending
+**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments), 7 (reports); Frontend Phases 1–7
+**Tested Code**: All Sprints 1–7 ✅ (379 tests across 13 files) + Frontend E2E (45 Playwright specs across 8 files)
+**Frontend**: Phase 1–2 (Sprint 9, commit d14589b4) + Phase 3–4 (Sprint 10, commit f536667f) + Phase 5 Delivery Management (specs/007, all tasks [X]) + Phase 6 Payment Management (specs/008, all tasks [X]) + Phase 7 Reports Pages (specs/009, all T001–T021 [X], commit 4489d6a) complete; Phase 8 pending
 **Untested Code**: None
 **Total Tables**: 17
 **Total API Endpoints**: ~85
@@ -125,8 +125,15 @@
 - [x] Six routes registered in `App.tsx`, all `<RoleGuard roles={["OWNER","ADMIN"]}>`
 - [x] tests: 7 E2E specs in `frontend/e2e/payments.spec.ts` (advance/bill payment, bill generate, outstanding, status update, RBAC)
 
-### Sprint 12: Frontend - React Phases 7–8 (NEXT — NOT STARTED)
-- [ ] Phase 7: Report pages (T132-T146)
+### Phase 7: Reports Pages (COMPLETED ✅ — specs/009, T001-T021, commit 4489d6a)
+- [x] `frontend/src/types/reports.ts` (all report interfaces + param interfaces) + `REPORT_PRESETS` in `lib/constants.ts` + `formatQuantity`/`formatPercent` in `lib/utils.ts`
+- [x] `frontend/src/api/reports.ts` (6 fetchers + `downloadReportCsv` via `format=csv` blob download) + `hooks/useReports.ts` (`refresh` in query keys)
+- [x] `frontend/src/components/reports/`: KpiCard, PresetFilter, TrendBadge, UtilizationBar, AgingBuckets
+- [x] `frontend/src/pages/reports/`: DashboardPage, RouteDeliveryReportPage, RevenueReportPage, ConsumptionReportPage, TokenUtilizationPage, CollectionEfficiencyPage
+- [x] Routes in `App.tsx` with RoleGuards matching backend RBAC; `/` → `/reports/dashboard` redirect; placeholder DashboardPage deleted
+- [x] tests: 7 E2E specs in `frontend/e2e/reports.spec.ts`; backend `REPORT_CACHE_DISABLED=1` env var disables the in-memory report cache for E2E (isolated `milk_management_e2e` DB, reset each run)
+
+### Sprint 13: Frontend - Phase 8 Polish & Testing (NEXT — NOT STARTED)
 - [ ] Phase 8: Polish & testing (T147-T158)
 
 ### Sprint 10: Testing and Deployment (NOT STARTED)
@@ -154,10 +161,9 @@
 
 ## Immediate Next Steps (Priority Order)
 
-1. **🔴 HIGH**: Frontend Phase 7 — Reports pages (T132-T146 in `specs/004-react-frontend/tasks.md`)
-2. **🔴 HIGH**: Frontend Phase 8 — Polish & testing (T147-T158)
-3. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
-4. **🟡 MEDIUM**: Backend-wide RBAC on `/payments/*` (and other) routers — only `reports`/`auth` use `get_current_user` (see specs/008 spec.md)
-5. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
-6. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
-7. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)
+1. **🔴 HIGH**: Frontend Phase 8 — Polish & testing (T147-T158 in `specs/004-react-frontend/tasks.md`)
+2. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
+3. **🟡 MEDIUM**: Backend-wide RBAC on `/payments/*` (and other) routers — only `reports`/`auth` use `get_current_user` (see specs/008 spec.md)
+4. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
+5. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
+6. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)
