@@ -33,7 +33,7 @@ test.describe("authentication", () => {
 
   test("owner can access the routes page", async ({ page }) => {
     await login(page, "owner", "owner123");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/reports\/dashboard/);
     await expect(page.getByText("owner (OWNER)")).toBeVisible();
     await page.goto("/routes");
     await expect(page.getByRole("button", { name: "Create Route" })).toBeVisible();
@@ -41,7 +41,7 @@ test.describe("authentication", () => {
 
   test("checker is blocked from owner-only pages", async ({ page }) => {
     await login(page, "checker1", "checker123");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/reports\/dashboard/);
     await expect(page.getByText("checker1 (CHECKER)")).toBeVisible();
     await page.goto("/routes");
     await expect(page.getByText("403")).toBeVisible();
@@ -57,7 +57,7 @@ test.describe("authentication", () => {
 
   test("logout returns to the login page", async ({ page }) => {
     await login(page, "owner", "owner123");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/reports\/dashboard/);
     await page.getByRole("button", { name: "Logout" }).click();
     await expect(page).toHaveURL(/\/login/);
     await expect(page.getByRole("button", { name: "Sign In" })).toBeVisible();

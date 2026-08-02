@@ -30,6 +30,16 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+export function formatQuantity(quantity: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 2,
+  }).format(quantity);
+}
+
+export function formatPercent(value: number): string {
+  return `${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 1 }).format(value)}%`;
+}
+
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     ACTIVE: "bg-emerald-100 text-emerald-800",

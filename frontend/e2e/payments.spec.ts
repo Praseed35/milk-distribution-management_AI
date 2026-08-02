@@ -224,7 +224,7 @@ test.describe("payments (owner)", () => {
     await page.getByLabel("Username").fill("checker1");
     await page.getByLabel("Password").fill("checker123");
     await page.getByRole("button", { name: "Sign In" }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/reports\/dashboard/);
 
     await page.goto("/payments");
     await expect(page.getByText("You do not have permission to access this page.")).toBeVisible();

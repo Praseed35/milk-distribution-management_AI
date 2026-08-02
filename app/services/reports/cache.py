@@ -1,5 +1,9 @@
 import hashlib
+import os
 import time
+
+
+CACHE_ENABLED = os.getenv("REPORT_CACHE_DISABLED", "0") != "1"
 
 
 class ReportCache:
@@ -11,6 +15,8 @@ class ReportCache:
         return hashlib.md5(raw.encode()).hexdigest()
 
     def get(self, key: str):
+        if not CACHE_ENABLED:
+            return None
         if key in self._store:
             expires, data = self._store[key]
             if time.time() < expires:
@@ -19,6 +25,8 @@ class ReportCache:
         return None
 
     def set(self, key: str, data, ttl: int = 300):
+        if not CACHE_ENABLED:
+            return
         self._store[key] = (time.time() + ttl, data)
 
     def invalidate(self, pattern: str | None = None):

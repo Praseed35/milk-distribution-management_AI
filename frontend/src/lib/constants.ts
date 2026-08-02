@@ -63,3 +63,13 @@ export const PAYMENT_MODES = ["CASH", "UPI", "CARD", "CHEQUE", "BANK_TRANSFER"] 
 export const PAYMENT_TYPES = ["ADVANCE", "BILL_PAYMENT"] as const;
 
 export const TOKEN_PAYMENT_MODES = ["PREPAID", "POSTPAID"] as const;
+
+export const REPORT_PRESETS = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "this_week", label: "This Week" },
+  { value: "last_week", label: "Last Week" },
+  { value: "this_month", label: "This Month" },
+  { value: "last_month", label: "Last Month" },
+  { value: "this_year", label: "This Year" },
+] as const;

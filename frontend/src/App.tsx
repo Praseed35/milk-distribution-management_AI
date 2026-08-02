@@ -8,7 +8,12 @@ import RoleGuard from "./components/guards/RoleGuard";
 import AppLayout from "./components/layout/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
-import DashboardPage from "./pages/DashboardPage";
+import ReportsDashboardPage from "./pages/reports/DashboardPage";
+import RouteDeliveryReportPage from "./pages/reports/RouteDeliveryReportPage";
+import RevenueReportPage from "./pages/reports/RevenueReportPage";
+import ConsumptionReportPage from "./pages/reports/ConsumptionReportPage";
+import TokenUtilizationPage from "./pages/reports/TokenUtilizationPage";
+import CollectionEfficiencyPage from "./pages/reports/CollectionEfficiencyPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RouteListPage from "./pages/routes/RouteListPage";
 import RouteFormPage from "./pages/routes/RouteFormPage";
@@ -57,8 +62,64 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<DashboardPage />} />
+              <Route index element={<Navigate to="/reports/dashboard" replace />} />
               <Route path="change-password" element={<ChangePasswordPage />} />
+              <Route
+                path="reports/dashboard"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN", "CHECKER", "DELIVERY_PARTNER"]}>
+                    <ReportsDashboardPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="reports/route-delivery"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN", "CHECKER", "DELIVERY_PARTNER"]}>
+                    <RouteDeliveryReportPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="reports/revenue"
+                element={
+                  <RoleGuard roles={["OWNER"]}>
+                    <RevenueReportPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="reports/consumption"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN", "CHECKER"]}>
+                    <ConsumptionReportPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="reports/consumption/:customerId"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN", "CHECKER"]}>
+                    <ConsumptionReportPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="reports/token-utilization"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <TokenUtilizationPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="reports/collection-efficiency"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <CollectionEfficiencyPage />
+                  </RoleGuard>
+                }
+              />
               <Route
                 path="routes"
                 element={

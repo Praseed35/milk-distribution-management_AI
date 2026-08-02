@@ -11,6 +11,8 @@ Environment:
     E2E_DB_NAME   - test database name (default: milk_management_e2e)
     E2E_PORT      - port to serve the API on (default: 8001)
     DATABASE_URL  - optional full override; wins over E2E_DB_NAME
+
+The in-memory report cache is disabled so E2E assertions always read fresh data.
 """
 
 import os
@@ -32,6 +34,7 @@ DEFAULT_DATABASE_URL = (
 )
 
 os.environ.setdefault("DATABASE_URL", DEFAULT_DATABASE_URL)
+os.environ.setdefault("REPORT_CACHE_DISABLED", "1")
 
 
 def ensure_database_exists() -> None:

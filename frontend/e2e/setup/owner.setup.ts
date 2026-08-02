@@ -8,7 +8,7 @@ setup("authenticate as owner", async ({ page }) => {
   await page.getByLabel("Password").fill("owner123");
   await page.getByRole("button", { name: "Sign In" }).click();
 
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/reports\/dashboard/);
   await page.getByText("owner (OWNER)").waitFor();
 
   await page.context().storageState({ path: OWNER_AUTH_FILE });
