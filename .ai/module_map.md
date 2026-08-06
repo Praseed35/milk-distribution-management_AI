@@ -1,4 +1,4 @@
-# Module Map (As of August 2, 2026)
+# Module Map (As of August 4, 2026 — verified against source)
 
 ## Tested Modules ✅ (with test coverage)
 
@@ -34,24 +34,36 @@ Payment Management ✅ (Sprint 6: bills, payments, outstanding)
 Reports & Analytics ✅ (Sprint 7: 6 report types, CSV, cache, RBAC)
 ```
 
-## Code Complete but UNTESTED ⚠️ (no test coverage)
+## Implemented ✅ (Sprint 8 AI BI, specs/010)
 
 ```
-Token Register ⚠️ (sheet-level ledger, Sprint 4 remaining)
-    ↓
-Warning Log ⚠️ (alert dashboard, Sprint 4 remaining)
+AI Business Intelligence ✅ (Sprint 8, specs/010 — backend + frontend + E2E T035 + quickstart T036)
+    app/services/ai/:
+        forecast.py → GET /ai/forecast   (weekday-seasonal moving average, OWNER/ADMIN)
+        anomaly.py  → GET /ai/anomalies  (deterministic z-score checks, OWNER/ADMIN)
+        churn.py    → GET /ai/churn-risk (score 0-100, LOW/MEDIUM/HIGH, OWNER/ADMIN)
+        insights.py → GET /ai/insights   (LLM narrative + stats; stats_only fallback, OWNER only)
+        chat.py     → POST /ai/chat      (Q&A over business data; per-user rate limit, OWNER only)
+        client.py   → LLM client (AI_LLM_DISABLED-aware; default mock provider)
+        llm_payload.py → prompt/context builders for insights + chat
+        cache.py    → 300s per-user TTL cache on AI GETs (?refresh=true bypasses)
+    frontend/src:
+        api/ai.ts + hooks/useAI.ts + types/ai.ts → components/ai/* (5) → pages/reports/AIInsightsPage.tsx (/reports/ai, OWNER/ADMIN)
+    tests/test_ai.py → 87 tests (forecast, anomalies, churn, insights, chat + RBAC + degradation + edge cases)
 ```
 
 ## Not Started ❌
 
+> **Correction (Aug 4, 2026)**: Token Register and Warning Log were previously listed as "Code Complete but UNTESTED ⚠️". Verified against source — **no service or router exists** for either (only the `token_sheet_warnings` TABLE is created/populated during delivery registration). They are NOT implemented.
+
 ```
-Token Register ❌ (sheet-level ledger, Sprint 4 remaining)
+Token Register ❌ (sheet-level ledger, Sprint 4 remaining — not started)
     ↓
-Warning Log ❌ (alert dashboard, Sprint 4 remaining)
+Warning Log ❌ (alert dashboard, Sprint 4 remaining — table exists, no API/UI)
     ↓
-AI Business Intelligence ❌ (Sprint 8)
+AI route optimization suggestions ❌ (deferred — not in specs/010 scope)
     ↓
-Frontend Phase 8 ❌ (Polish & Testing — Phases 1-7 complete ✅)
+Frontend Phase 8 ❌ (Polish & Testing — Phases 1-7 + AI Insights complete ✅)
 ```
 
 ## Frontend Reports API Module (Phase 7 ✅ IMPLEMENTED)
@@ -79,7 +91,7 @@ Sprint 1 (Master Data) ✅ TESTED
             └─→ Sprint 5 (Reconciliation) ✅ TESTED
                  └─→ Sprint 6 (Payment Management) ✅ TESTED
                       └─→ Sprint 7 (Reports) ✅ TESTED
-                           └─→ Sprint 8 (AI BI) ❌
+                           └─→ Sprint 8 (AI BI) ✅ TESTED (specs/010, 87 tests; E2E T035 + quickstart T036 done)
 
 Sprint 4 Core (Token Book) ✅ TESTED (independent)
 

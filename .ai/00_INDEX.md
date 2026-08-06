@@ -31,6 +31,21 @@
 | `development_rules.md` | Coding conventions and development process |
 | `database_schema.md` | Database design principles and planned tables |
 
+## AI Assistant Guides
+
+| File | Purpose |
+|------|---------|
+| `api_contract.md` | REST conventions: plural nouns, `/api/v1` base, response envelope formats |
+| `ai_behavior.md` | AI assistant behavior rules (read docs first, explain, wait for approval) |
+| `prompts.md` | Standard prompt templates (architecture review, feature implementation, debugging, code review) |
+
+## Deprecated Files (superseded — do not use as source of truth)
+
+| File | Purpose |
+|------|---------|
+| `project-context.md` | Superseded by `PROJECT_CONTEXT.md` (header states deprecated) |
+| `PROJECT.md` | Superseded by `PROJECT_CONTEXT.md` (header states deprecated) |
+
 ## Legacy/Reference Files (numbered prefix)
 
 | File | Purpose |
@@ -72,11 +87,15 @@
 ### If continuing development:
 1. Read `TODO.md` for sprint roadmap
 2. Read `feature_status.md` for module status
-3. Read `CURRENT_STATE.md` for patterns and templates
+3. Read `current_state.md` for patterns and templates
 4. Read `module_map.md` for dependency understanding
 
 ---
 
-## Last Updated: August 2, 2026
+## Last Updated: August 5, 2026
 
-**Note**: All 14 backend modules (Master Data → Reports & Analytics) implemented and tested. **379 tests passing across 13 test files** (13th migration `a1b2c3d4e5f6` added `shift` to `delivery_exceptions`). Frontend: **Phases 1–7 complete** — Phase 1–2 (Sprint 9, commit `d14589b4`), Phase 3–4 (Sprint 10, commit `f536667f`), Phase 5 Delivery Management (specs/007 all tasks done, incl. backend fixes: `POST /deliveries/sessions/{id}/complete`, server-side OWNER RBAC on edit/reopen, checklist auto-generation on session create), Phase 6 Payment Management (specs/008, all 20 tasks done: payments/bills/outstanding pages + 7 E2E specs), Phase 7 Reports Pages (specs/009-reports-pages, all 21 tasks done: 6 report pages + 5 report components + types/api/hooks + RoleGuards matching backend RBAC + 7 E2E specs, commit `4489d6a`). Full Playwright E2E suite (45 specs across 8 files) is green. Phase 8 (Polish & Testing) pending. See `feature_status.md` for detailed completion status.
+**Note**: All 15 backend modules (Master Data → Reports & Analytics + AI Business Intelligence) implemented and tested. **466 tests passing across 14 test files** (13th migration `a1b2c3d4e5f6` added `shift` to `delivery_exceptions`; AI module uses aggregation queries, no new tables). Frontend: **Phases 1–7 + AI Insights complete** — Phase 1–2 (Sprint 9, commit `d14589b4`), Phase 3–4 (Sprint 10, commit `f536667f`), Phase 5 Delivery Management (specs/007 all tasks done, incl. backend fixes: `POST /deliveries/sessions/{id}/complete`, server-side OWNER RBAC on edit/reopen, checklist auto-generation on session create), Phase 6 Payment Management (specs/008, all 20 tasks done: payments/bills/outstanding pages + 7 E2E specs), Phase 7 Reports Pages (specs/009-reports-pages, all 21 tasks done: 6 report pages + 5 report components + types/api/hooks + RoleGuards matching backend RBAC + 7 E2E specs, commit `4489d6a`), AI Insights `/reports/ai` (specs/010, all 37 tasks T001–T037 done: forecast/anomalies/churn/insights/chat + `types/ai.ts`/`api/ai.ts`/`hooks/useAI.ts` + 5 AI components + `frontend/e2e/ai.spec.ts` E2E + quickstart validation). Full Playwright E2E suite (52 specs across 9 files) is green. Phase 8 (Polish & Testing) pending. See `feature_status.md` for detailed completion status.
+
+**Aug 4, 2026 audit**: Index now also lists `api_contract.md`, `ai_behavior.md`, `prompts.md`, and the deprecated `project-context.md`/`PROJECT.md`. New verified findings recorded in `TECH_DEBT.md`: revenue report empty-envelope cache bug (B3), incomplete `UserRole` enum (B4), `scripts/e2e_backend.py` exists, CORS allows only :5173 while Playwright uses :5174.
+
+**Aug 5, 2026 audit (AI module)**: Sprint 8 AI BI (specs/010) implemented — 14 routers, 16 schema modules, 13 exceptions + base, 14 test files / 466 tests (87 AI), ~90 endpoints, 5 AI service modules + LLM client/payload/cache. New findings recorded in `TECH_DEBT.md`: AI LLM disabled-mode caveat (B5), AI endpoint cache no-invalidation (B6). Pre-existing `scripts/test_subscriptions.py` failures are server-dependent (need a live server).

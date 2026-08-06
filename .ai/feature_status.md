@@ -1,4 +1,4 @@
-# Feature Status (As of August 2, 2026 — Updated)
+# Feature Status (As of August 4, 2026 — Updated)
 
 ## Backend
 
@@ -67,9 +67,19 @@
 - Alembic migration (indexes on delivery_status, payment_date, bill_period_start) ✅
 - 24 tests across 6 story areas + RBAC + CSV + auth ✅
 
-### AI Business Intelligence (Sprint 8) — NOT STARTED ❌
-- Demand forecasting ❌
-- Anomaly detection ❌
+### AI Business Intelligence (Sprint 8 / specs/010) — COMPLETED ✅ (all tasks T001–T037, incl. E2E T035 + quickstart T036)
+- Statistical demand forecast (weekday-seasonal moving average, per route/milk type, horizon 1-30) ✅
+- Anomaly detection (deterministic z-score: high returns, cash shortfall, delivery-milk mismatch, low sales day, consumption drop) ✅
+- Churn-risk scoring (0-100, LOW/MEDIUM/HIGH, factor breakdown) ✅
+- AI narrative `/ai/insights` (OWNER-only; LLM + stats-only degradation on `AI_LLM_DISABLED`/failure) ✅
+- Conversational Q&A `/ai/chat` (OWNER-only; per-user sliding-window rate limit → 429; LLM down → 503) ✅
+- In-memory 300s per-user cache on all AI GETs (`?refresh=true` bypasses); chat never cached ✅
+- RBAC: forecast/anomalies/churn OWNER/ADMIN; insights/chat OWNER only ✅
+- 87 tests in `tests/test_ai.py` (incl. edge cases: horizon/limit/days_back bounds, status+inactive filters, cache TTL & `?refresh`, balanced/today-unclosed exclusions, severity ordering, churn factor sum/cap, insights presets & reversed ranges, chat max/whitespace boundaries, sliding-window rate-limit reset, PII stripping) ✅
+- Frontend: `AIInsightsPage` with ForecastSection, AnomalyList, ChurnRiskTable, InsightNarrative, ChatPanel; `types/ai.ts`/`api/ai.ts`/`hooks/useAI.ts`; nav + RoleGuard OWNER/ADMIN ✅
+- E2E: `frontend/e2e/ai.spec.ts` (7 tests — forecast bars, anomalies/churn render, stats-only notice, chat 503, CHECKER nav/denial, horizon clamp 1–30, forecast Refresh, chat Send disabled for empty/whitespace) green; `scripts/e2e_backend.py` sets `AI_LLM_DISABLED=1` alongside `REPORT_CACHE_DISABLED=1` ✅
+- Quickstart `quickstart.md` scenarios 1–3, 5, 6 validated (live-LLM Scenario 4 is a manual smoke test, never run in CI) ✅
+- Route optimization suggestions ❌ (deferred — not in specs/010 scope)
 
 ## Frontend (Sprint 9 — COMPLETED; Sprint 10 — COMPLETED; Phase 5 — COMPLETED; Phase 6 — COMPLETED; Phase 7 — COMPLETED)
 - **Phase 1: Setup, Auth, Layout — COMPLETED ✅** (backend CORS + /api/v1 prefix + health endpoint; Vite scaffold; auth flow; layout; UI primitives) [Sprint 9, commit d14589b4]
@@ -88,14 +98,18 @@
 
 ## Summary
 
+> Verified against source Aug 5, 2026.
+
 | Status | Count |
 |--------|-------|
-| Tested Modules | 14 (master data + subscriptions + exceptions + tokens + delivery + payments + reports) |
+| Tested Modules | 15 (master data + subscriptions + exceptions + tokens + delivery + payments + reports + AI) |
 | Untested Modules | 0 |
-| Known Bugs | 0 |
-| Backend Test Files | 13 (delivery + delivery_edit + payments + reports) |
-| Backend Tests | 379 |
-| Frontend E2E (Playwright) | 45 specs across 8 spec files (`frontend/e2e/`), incl. 7 for payments + 7 for reports |
-| Tables | 17 (no new tables — reports use aggregation queries) |
-| API Endpoints | ~85 (6 report endpoints added + complete endpoint) |
+| Known Bugs | 1 (revenue report empty envelope on JSON cache hit — `app/routers/reports.py`; see TECH_DEBT B3) |
+| Backend Test Files | 14 (delivery + delivery_edit + payments + reports + ai) |
+| Backend Tests | 466 |
+| Frontend E2E (Playwright) | 52 specs across 9 spec files (`frontend/e2e/`), incl. 7 for payments + 7 for reports + 7 for AI (`ai.spec.ts`) |
+| Tables | 17 (no new tables — AI + reports use aggregation queries) |
+| API Endpoints | ~90 (6 report + 5 AI endpoints added) |
 | Version | 1.0 Development |
+
+**Note**: "Extended Token Features" (Token Register sheet-level ledger, Warning Log dashboard) are **NOT implemented** — no service or router exists for either. The `token_sheet_warnings` TABLE exists (populated during delivery registration) but has no management UI/API. See `module_map.md`.

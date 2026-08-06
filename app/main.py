@@ -25,6 +25,7 @@ from app.routers.deliveries import router as deliveries_router
 from app.routers.delivery_edit import router as delivery_edit_router
 from app.routers.payments import router as payment_router
 from app.routers.reports import router as reports_router
+from app.routers.ai import router as ai_router
 
 
 app = FastAPI()
@@ -52,6 +53,7 @@ api_v1.include_router(deliveries_router)
 api_v1.include_router(delivery_edit_router)
 api_v1.include_router(payment_router)
 api_v1.include_router(reports_router)
+api_v1.include_router(ai_router)
 
 app.include_router(api_v1)
 

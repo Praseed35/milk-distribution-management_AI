@@ -443,7 +443,7 @@ Used in schema validation patterns but not enforced as DB constraint.
 
 ## 13. Frontend Architecture (React + TypeScript + Vite)
 
-**Current state**: Phases 1–7 complete (Phase 8 pending). CORS configured for `http://localhost:5173`, API prefix `/api/v1` is primary. Backend fully ready for remaining frontend work. Playwright E2E suite (`frontend/e2e/`, 45 specs across 8 files) boots an isolated backend on :8001 (DB `milk_management_e2e`, report cache disabled via `REPORT_CACHE_DISABLED=1`) + Vite on :5174.
+**Current state**: Phases 1–7 complete (Phase 8 pending). CORS configured for `http://localhost:5173`, API prefix `/api/v1` is primary. Backend fully ready for remaining frontend work. Playwright E2E suite (`frontend/e2e/`, 52 specs across 9 files) boots an isolated backend on :8001 (DB `milk_management_e2e`, report cache disabled via `REPORT_CACHE_DISABLED=1`) + Vite on :5174.
 
 ### Stack (verified in `frontend/package.json`)
 

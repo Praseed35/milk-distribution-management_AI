@@ -4,15 +4,15 @@
 
 ---
 
-## Current State (Actual — August 2, 2026)
+## Current State (Actual — August 5, 2026)
 
-**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments), 7 (reports); Frontend Phases 1–7
-**Tested Code**: All Sprints 1–7 ✅ (379 tests across 13 files) + Frontend E2E (45 Playwright specs across 8 files)
-**Frontend**: Phase 1–2 (Sprint 9, commit d14589b4) + Phase 3–4 (Sprint 10, commit f536667f) + Phase 5 Delivery Management (specs/007, all tasks [X]) + Phase 6 Payment Management (specs/008, all tasks [X]) + Phase 7 Reports Pages (specs/009, all T001–T021 [X], commit 4489d6a) complete; Phase 8 pending
+**Completed Code**: Sprints 1, 2, 3 (delivery), 4-core (token books), 5 (reconciliation), 6 (payments), 7 (reports), 8-core (AI BI); Frontend Phases 1–7
+**Tested Code**: All Sprints 1–7 ✅ (379 tests across 13 files) + AI module (87 tests in `tests/test_ai.py`) + Frontend E2E (52 Playwright specs across 9 files)
+**Frontend**: Phase 1–2 (Sprint 9, commit d14589b4) + Phase 3–4 (Sprint 10, commit f536667f) + Phase 5 Delivery Management (specs/007, all tasks [X]) + Phase 6 Payment Management (specs/008, all tasks [X]) + Phase 7 Reports Pages (specs/009, all T001–T021 [X], commit 4489d6a) + AI Insights page (`/reports/ai`, OWNER/ADMIN) complete; Phase 8 pending
 **Untested Code**: None
 **Total Tables**: 17
-**Total API Endpoints**: ~85
-**Known Bugs**: 0
+**Total API Endpoints**: ~90
+**Known Bugs**: 1 — revenue report returns empty JSON envelope on cache hit (`app/routers/reports.py`; TECH_DEBT B3)
 
 ---
 
@@ -99,11 +99,13 @@
 - [x] Operational dashboard
 - [x] CSV export + in-memory caching + RBAC
 
-### Sprint 8: AI Business Intelligence (NOT STARTED)
-- [ ] Demand forecasting
-- [ ] Customer churn prediction
-- [ ] Route optimization suggestions
-- [ ] Anomaly detection (unusual orders, payments)
+### Sprint 8: AI Business Intelligence (IN PROGRESS ✅ backend + frontend core — specs/010, T001–T034 [X])
+- [x] Demand forecasting (weekday-seasonal moving average, per route/milk type, horizons 1-30)
+- [x] Customer churn prediction (score 0-100, LOW/MEDIUM/HIGH)
+- [x] Anomaly detection (deterministic z-score: high returns, cash shortfall, mismatch, low sales, consumption drop)
+- [x] AI narrative (`/ai/insights`, OWNER-only, LLM + stats-only degradation)
+- [x] Conversational Q&A (`/ai/chat`, OWNER-only, per-user rate limit)
+- [ ] Route optimization suggestions (deferred — not part of specs/010 scope)
 
 ### Sprint 9: Frontend - React Phases 1–2 (COMPLETED ✅, commit d14589b4)
 - [x] Phase 1: Backend prep (CORS, /api/v1 prefix, health) + frontend scaffold + auth + layout
@@ -136,7 +138,7 @@
 ### Sprint 13: Frontend - Phase 8 Polish & Testing (NEXT — NOT STARTED)
 - [ ] Phase 8: Polish & testing (T147-T158)
 
-### Sprint 10: Testing and Deployment (NOT STARTED)
+### Sprint 11: Testing and Deployment (NOT STARTED)
 - [ ] Comprehensive test coverage (target: 95%+)
 - [ ] API documentation finalization
 - [ ] Docker containerization
@@ -157,13 +159,25 @@
 **File**: `app/routers/delivery_edit.py`
 **Fix**: Both `edit_delivery()` and `reopen_session()` now inject `current_user: User = Depends(get_current_user)`.
 
+## 🐛 Known Bugs Open (found Aug 4, 2026)
+
+### Bug 3: Revenue report empty envelope on JSON cache hit
+**File**: `app/routers/reports.py` (`get_revenue`)
+On cache hit with `format=json`, returns `_envelope([], ...)` (empty) instead of cached data. CSV path OK. See TECH_DEBT B3.
+
+### Bug 4: `UserRole` enum missing ADMIN + EMPLOYEE
+**File**: `app/constants/roles.py`
+`ADMIN` used by reports RBAC, `EMPLOYEE` created by seed; neither is in the enum. See TECH_DEBT B4.
+
 ---
 
 ## Immediate Next Steps (Priority Order)
 
 1. **🔴 HIGH**: Frontend Phase 8 — Polish & testing (T147-T158 in `specs/004-react-frontend/tasks.md`)
-2. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
-3. **🟡 MEDIUM**: Backend-wide RBAC on `/payments/*` (and other) routers — only `reports`/`auth` use `get_current_user` (see specs/008 spec.md)
-4. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
-5. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
-6. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)
+2. **🔴 HIGH**: Fix revenue report cache-hit bug (TECH_DEBT B3)
+3. **🟡 MEDIUM**: Address SECRET_KEY hardening (move to env variable)
+4. **🟡 MEDIUM**: Backend-wide RBAC on `/payments/*` (and other) routers — only `reports`/`auth` use `get_current_user` (see specs/008 spec.md)
+5. **🟡 MEDIUM**: Complete `UserRole` enum (ADMIN, EMPLOYEE) or document role strings (TECH_DEBT B4)
+6. **🟢 LOW**: Remove empty migration `1154a3a25414` or implement intended logic
+7. **🟢 LOW**: Add pagination/filtering to original CRUD endpoints
+8. **🟢 LOW**: Standardize HTTP status codes (201 vs 200 on create)

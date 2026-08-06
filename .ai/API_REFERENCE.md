@@ -1302,6 +1302,155 @@ Single-page operational overview for today — session counts, delivery statuses
 
 ---
 
+## AI Insights (Sprint 14)
+
+> All AI endpoints require authentication. Statistical endpoints (`/ai/forecast`, `/ai/anomalies`, `/ai/churn-risk`) are **OWNER/ADMIN**; narrative (`/ai/insights`) and chat (`/ai/chat`) are **OWNER only** (403 for CHECKER/DELIVERY_PARTNER/EMPLOYEE).
+> All results (except chat) are cached server-side for 300s per user; `?refresh=true` bypasses the cache. Forecast/churn responses tolerate insufficient history with `is_sufficient_history: false` / `risk_score: null` items (flat history → sharp ranges). When `AI_LLM_DISABLED=1` the narrative endpoint degrades to `stats_only: true` (no LLM call, no 503).
+> Volumes are expressed in **litres** throughout.
+
+### GET `/ai/forecast`
+
+Statistical demand forecast (weekday-seasonal moving average) per route/milk type.
+
+**Roles**: OWNER, ADMIN
+
+**Query Parameters**: route_id, milk_type_id, horizon_days (1-30, default 7), refresh
+
+**Response 200**:
+```json
+{
+  "route_id": 1, "milk_type_id": null, "horizon_days": 7,
+  "date_from": "2026-08-06", "date_to": "2026-08-12",
+  "method": "weekday_seasonal_moving_average",
+  "is_sufficient_history": true,
+  "message": null,
+  "total_expected": 35.0, "low_range": 31.5, "high_range": 38.5,
+  "items": [{
+    "date": "2026-08-06", "predicted_quantity": 5.0, "low": 4.5, "high": 5.5,
+    "actual_quantity": null, "is_sufficient_history": true
+  }]
+}
+```
+
+**Errors**: 401, 403, 422 (horizon_days out of range)
+
+---
+
+### GET `/ai/anomalies`
+
+Anomaly detection (deterministic z-score based): unusually high returns, cash shortfall, delivery-milk mismatch, low sales day, consumption drop.
+
+**Roles**: OWNER, ADMIN
+
+**Query Parameters**: from_date, to_date (default last 30 days), refresh
+
+**Response 200**:
+```json
+{
+  "generated_at": "2026-08-05T10:00:00",
+  "count": 2,
+  "items": [{
+    "type": "low_sales_day", "severity": "HIGH",
+    "title": "Sales dropped on 2026-08-03",
+    "description": "...", "entity_type": "route", "entity_id": 1,
+    "entity_name": "Downtown Route", "metric": "delivered_quantity",
+    "expected": 10.0, "actual": 2.0, "deviation": 0.8,
+    "occurred_on": "2026-08-03", "suggested_action": "..."
+  }]
+}
+```
+
+**Errors**: 401, 403, 422
+
+---
+
+### GET `/ai/churn-risk`
+
+Churn-risk scoring per customer (score 0-100; LOW <40, MEDIUM <70, HIGH >=70) based on delivery changes, payment behavior, and subscriptions.
+
+**Roles**: OWNER, ADMIN
+
+**Query Parameters**: limit (default 20, max 100), refresh
+
+**Response 200**:
+```json
+{
+  "generated_at": "2026-08-05T10:00:00",
+  "count": 1,
+  "items": [{
+    "customer_id": 1, "customer_code": "C00001", "customer_name": "Rajesh Kumar",
+    "route_name": "Downtown Route", "risk_score": 75, "risk_level": "HIGH",
+    "factors": [{"factor": "declining_deliveries", "weight": 40, "contribution": 30}],
+    "suggested_action": "..."
+  }]
+}
+```
+
+**Errors**: 401, 403, 422
+
+---
+
+### GET `/ai/insights`
+
+OWNER-only AI narrative summarizing operations, revenue trend, top route, and flagged items.
+
+**Roles**: OWNER only
+
+**Query Parameters**: preset, from_date, to_date, refresh
+
+**Response 200**:
+```json
+{
+  "generated_at": "2026-08-05T10:00:00",
+  "stats_only": false,
+  "data_range": {"from": "2026-08-01", "to": "2026-08-05"},
+  "narrative": "Revenue is up 5% this month. Downtown Route is the top performer...",
+  "operational": {"total_sessions": 3, "total_milk_loaded": 30.0},
+  "forecast": {"...": "DemandForecast object"},
+  "anomalies": {"...": "AnomalyReport object"},
+  "churn_risk": {"...": "ChurnRiskReport object"}
+}
+```
+
+**Degradation**: `AI_LLM_DISABLED=1` → `stats_only: true`, `narrative: null` (statistics still returned). LLM failure → 503 `{"detail": "AI service unavailable. Try again later."}`
+
+**Errors**: 401, 403 (non-OWNER), 422, 503
+
+---
+
+### POST `/ai/chat`
+
+OWNER-only conversational Q&A over business data with per-user rate limiting.
+
+**Roles**: OWNER only
+
+**Request Body**:
+```json
+{
+  "message": "string (1-2000 chars)",
+  "history": [{"role": "user|assistant", "content": "string"}]   // max 8 turns
+}
+```
+
+**Response 200**:
+```json
+{
+  "reply": "Downtown Route collected 500.00 this month.",
+  "data_range": {"from": "2026-08-01", "to": "2026-08-05"},
+  "sources": ["revenue_by_route", "route_delivery"],
+  "stats_only": false
+}
+```
+
+**Errors**:
+- 401: missing/invalid token
+- 403: non-OWNER
+- 422: empty message, message >2000 chars, history >8 turns
+- 429: `{"detail": "Too many requests. Please wait and try again."}` (sliding window, `AI_CHAT_MAX_REQUESTS_PER_MINUTE`, default 20)
+- 503: `{"detail": "AI service unavailable. Try again later."}` (LLM down / `AI_LLM_DISABLED=1`)
+
+---
+
 ## Common Response Codes
 
 | Code | Meaning |

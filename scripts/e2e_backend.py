@@ -35,6 +35,7 @@ DEFAULT_DATABASE_URL = (
 
 os.environ.setdefault("DATABASE_URL", DEFAULT_DATABASE_URL)
 os.environ.setdefault("REPORT_CACHE_DISABLED", "1")
+os.environ.setdefault("AI_LLM_DISABLED", "1")
 
 
 def ensure_database_exists() -> None:

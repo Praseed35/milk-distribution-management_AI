@@ -5,6 +5,7 @@ __pycache__/
 
 # Virtual Environment
 venv/
+.venv/
 .env
 
 # VS Code
@@ -35,6 +36,7 @@ overview.docx
 dist/
 build/
 *.egg-info/
+node_modules/
 
 # Environment files
 .env*

@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md - Milk Management ERP Backend
 
-> **DEPRECATED — SUPERSEDED.** This is an older snapshot of the project context (says 8 migrations, ~218 tests, no delivery/payment/report modules). The canonical, up-to-date project memory is **`PROJECT_CONTEXT.md`** (13 migrations, 379 tests, 17 tables, 13 routers, frontend Phases 1–7 complete). Keep this file only as historical reference.
+> **DEPRECATED — SUPERSEDED.** This is an older snapshot of the project context (says 8 migrations, ~218 tests, no delivery/payment/report modules). The canonical, up-to-date project memory is **`PROJECT_CONTEXT.md`** (13 migrations, 466 tests across 14 files, 17 tables, 15 routers + AI module, frontend Phases 1–7 + AI Insights complete). Keep this file only as historical reference.
 
 > Primary project memory for AI assistants. Read this first.
 
@@ -127,6 +127,7 @@ app/
 
 scripts/
 ├── seed.py                 # Idempotent database seeder
+├── seed_history.py         # Seeds 30 days of sessions/deliveries/bills/payments for the AI pages + reports
 └── test_subscriptions.py   # Manual test script
 
 tests/

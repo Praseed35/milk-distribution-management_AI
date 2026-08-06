@@ -66,6 +66,7 @@ export const navigation: NavItem[] = [
       { label: "Consumption", path: "/reports/consumption", roles: ["OWNER", "ADMIN", "CHECKER"] },
       { label: "Token Utilization", path: "/reports/token-utilization", roles: ["OWNER", "ADMIN"] },
       { label: "Collection Efficiency", path: "/reports/collection-efficiency", roles: ["OWNER", "ADMIN"] },
+      { label: "AI Insights", path: "/reports/ai", roles: ["OWNER", "ADMIN"] },
     ],
   },
 ];

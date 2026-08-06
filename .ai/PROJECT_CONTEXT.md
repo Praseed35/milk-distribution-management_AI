@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the full lifecycle of a milk distribution business: master data (customers, routes, milk types, employees), subscriptions, delivery exceptions, token book management, **daily delivery sessions**, **reconciliation**, **payment management**, and **reports & analytics**. Serves a **React + TypeScript frontend** (`frontend/`, Phases 1–7 complete) via a REST API under `/api/v1`.
+A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the full lifecycle of a milk distribution business: master data (customers, routes, milk types, employees), subscriptions, delivery exceptions, token book management, **daily delivery sessions**, **reconciliation**, **payment management**, **reports & analytics**, and **AI business intelligence** (forecast, anomalies, churn risk, LLM narrative, conversational chat). Serves a **React + TypeScript frontend** (`frontend/`, Phases 1–7 + AI Insights page complete) via a REST API under `/api/v1`.
 
 **Business Domain**: Milk distribution cooperatives/dairies that deliver milk to customers on daily routes using subscription-based ordering. Customers receive physical "token books" (prepaid booklets) to collect milk. Delivery partners load milk, deliver to customers, collect tokens/cash, return leftover milk, and the session is reconciled.
 
@@ -18,13 +18,13 @@ A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the
 |--------|-------|
 | SQLAlchemy Models | **17 classes / 16 files** (10 original + DeliverySession, DailyDelivery, SessionEdit, TokenSheetWarning + CustomerBill, CustomerBillItem, CustomerPayment — CustomerBillItem lives in customer_bill.py) |
 | Alembic Migrations | **13** (9 original + payment tables + report indexes + `delivery_exceptions.shift`) |
-| API Routers | **13** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, **deliveries**, **delivery_edit**, **payments**, **reports**) |
-| Service Modules | **15 service files + 8 reports files** (auth, user, route, customer, milk_type, employee, subscription, delivery_exception, token_book, delivery_service, delivery_registration, delivery_reconciliation, delivery_edit_service, payment + reports: route_delivery, revenue, collection, consumption, token_utilization, dashboard, common, cache) |
-| Schema Modules | **16** (original + delivery + payments + reports) |
-| Exception Modules | **11 + base** (no new exceptions for reports) |
-| Test Files | **13** (delivery + delivery_edit + payments + reports added) |
-| Total API Endpoints | **~85** (39 original + 26 delivery + 14 payments + 6 reports) |
-| Frontend | **Phases 1–7 complete** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) [Sprint 9]; Phase 3 (Subscriptions & Exceptions) + Phase 4 (Token Books) [Sprint 10]; Phase 5 (Delivery Management) [specs/007]; Phase 6 (Payment Management) [specs/008]; Phase 7 (Reports Pages) [specs/009, commit 4489d6a]. Phase 8 (Polish) pending |
+| API Routers | **14** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, **deliveries**, **delivery_edit**, **payments**, **reports**, **ai**) |
+| Service Modules | **19 service files + 8 reports files** (auth, user, route, customer, milk_type, employee, subscription, delivery_exception, token_book, delivery_service, delivery_registration, delivery_reconciliation, delivery_edit_service, payment + AI: forecast, anomaly, churn, insights, chat + reports: route_delivery, revenue, collection, consumption, token_utilization, dashboard, common, cache) |
+| Schema Modules | **16** (original + delivery + payments + reports + ai) |
+| Exception Modules | **13 + base** (incl. payment + ai) |
+| Test Files | **14** (delivery + delivery_edit + payments + reports + ai) |
+| Total API Endpoints | **~90** (39 original + 26 delivery + 14 payments + 6 reports + 5 AI) |
+| Frontend | **Phases 1–7 + AI Insights complete** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) [Sprint 9]; Phase 3 (Subscriptions & Exceptions) + Phase 4 (Token Books) [Sprint 10]; Phase 5 (Delivery Management) [specs/007]; Phase 6 (Payment Management) [specs/008]; Phase 7 (Reports Pages) [specs/009, commit 4489d6a]; AI Insights (`/reports/ai`) [specs/010]. Phase 8 (Polish) pending |
 
 ---
 
@@ -40,7 +40,7 @@ A **Milk Distribution ERP backend** built with FastAPI + PostgreSQL. Manages the
 | Auth | JWT (python-jose) | HS256, 30min expiry |
 | Password Hashing | bcrypt (passlib) | CryptContext with auto-deprecation |
 | Validation | Pydantic v2 | `model_config = ConfigDict(from_attributes=True)` |
-| Testing | pytest + TestClient | **13 test files, 379 tests passing** |
+| Testing | pytest + TestClient | **14 test files, 466 tests passing** |
 | Test DB | Same PostgreSQL DB | Transaction rollback isolation per test |
 
 ---
@@ -90,7 +90,7 @@ app/
 │   ├── delivery_session.py, daily_delivery.py, session_edit.py, token_sheet_warning.py
 │   ├── customer_bill.py    # CustomerBill + CustomerBillItem
 │   └── customer_payment.py
-├── schemas/                # 16 Pydantic schema modules
+├── schemas/                # 15 Pydantic schema modules
 │   ├── __init__.py
 │   ├── auth.py, user.py, route.py, customer.py, milk_type.py, employee.py
 │   ├── subscription.py, delivery_exception.py
@@ -108,8 +108,9 @@ app/
 │   ├── deliveries.py (/deliveries/sessions) -- 16 endpoints (incl. POST /{id}/complete)
 │   ├── delivery_edit.py (/deliveries) -- 10 endpoints (edit/reopen now OWNER-only server-side)
 │   ├── payments.py (/payments) -- 14 endpoints
-│   └── reports.py (/reports) -- 6 endpoints
-├── services/               # 15 business logic modules + reports package (module-level functions)
+│   ├── reports.py (/reports) -- 6 endpoints
+│   └── ai.py (/ai) -- 5 endpoints (forecast, anomalies, churn-risk, insights, chat)
+├── services/               # 19 business logic modules + reports + ai packages (module-level functions)
 │   ├── auth_service.py, user_service.py, route_service.py
 │   ├── customer_service.py, milk_type_service.py, employee_service.py
 │   ├── subscription_service.py, delivery_exception_service.py
@@ -119,21 +120,30 @@ app/
 │   ├── delivery_reconciliation.py  # Reconciliation calculation, submit, validate, summary
 │   ├── delivery_edit_service.py    # Session reopen, undo delivery, edit delivery, edit history
 │   ├── payment_service.py          # Bill generation, payments, outstanding
+│   ├── ai/                         # 5 AI service modules + LLM client + payload builder + cache
+│   │   ├── __init__.py
+│   │   ├── client.py               # Mock/disabled-aware LLM client (NVIDIA-compatible), AI_LLM_DISABLED
+│   │   ├── llm_payload.py          # Prompt/context builders for insights + chat
+│   │   ├── cache.py                # AI report TTL cache (300s, per-user keys)
+│   │   ├── forecast.py, anomaly.py, churn.py, insights.py, chat.py
 │   └── reports/                    # 6 report + 1 common + 1 cache
 │       ├── __init__.py
 │       ├── route_delivery.py, revenue.py, collection.py
 │       ├── consumption.py, token_utilization.py, dashboard.py
 │       ├── common.py (date range, CSV export, role-scoped routes), cache.py (in-memory TTL cache)
-├── exceptions/             # 11 custom exception modules + base
+├── exceptions/             # 13 custom exception modules + base
 │   ├── base.py, user.py, route.py, customer.py, milk_type.py
 │   ├── employee.py, subscription.py, delivery_exception.py, token_book.py
 │   ├── delivery.py, delivery_edit.py, payment.py
-├── common/                 # Empty
-└── utils/                  # Empty
+│   └── ai.py (AIRateLimitError, AIUnavailableError)
+├── common/                 # Empty (only __init__.py)
+└── utils/                  # Empty (only __init__.py)
 
 scripts/
 ├── seed.py                 # Idempotent database seeder (5 users, 5 routes, 7 milk types, 15 customers, 5 employees, 5 subscriptions)
-└── test_subscriptions.py   # Manual test script
+├── seed_history.py         # Seeds 30 days of sessions/deliveries/bills/payments so AI pages + reports have history
+├── test_subscriptions.py   # Manual test script
+└── e2e_backend.py          # Playwright E2E backend: resets isolated milk_management_e2e DB, serves API on :8001
 
 tests/
 ├── conftest.py             # Test fixtures with DB isolation
@@ -149,8 +159,9 @@ tests/
 ├── test_daily_delivery.py     # 81 delivery tests (session, registration, reconciliation, edit)
 ├── test_delivery_edit.py      # 8 OWNER-RBAC tests (edit_delivery, reopen_session)
 ├── test_payments.py           # 33 payment management tests
-└── test_reports.py            # 24 reports tests (6 stories + RBAC + CSV + auth)
-# 13 test files, 379 tests total
+├── test_reports.py            # 24 reports tests (6 stories + RBAC + CSV + auth)
+└── test_ai.py                 # 87 AI tests (forecast, anomalies, churn, insights, chat, edge cases)
+# 14 test files, 466 tests total (plus 13 server-dependent scripts/test_subscriptions.py integration tests)
 
 alembic/
 ├── env.py                  # Imports Base.metadata, app.models for autogenerate
@@ -433,7 +444,18 @@ TokenIdentity ───< TokenBookIssue (token_identity_id)       │
 | POST | `/deliveries/session/{id}/reopen` | Reopen a closed session (owner only) | OWNER |
 | GET | `/deliveries/session/{id}/edit-history` | Get full edit history for a session | N/A |
 
-**Total: ~65 API endpoints across 12 routers**
+### AI Insights (`/ai`) — Sprint 14 (specs/010)
+| Method | Path | Description | Auth Required |
+|--------|------|-------------|---------------|
+| GET | `/ai/forecast` | Statistical demand forecast (weekday-seasonal moving average, horizon 1-30) | OWNER/ADMIN |
+| GET | `/ai/anomalies` | Anomaly detection (z-score: high returns, cash shortfall, mismatch, low sales, consumption drop) | OWNER/ADMIN |
+| GET | `/ai/churn-risk` | Churn-risk score per customer (0-100, LOW/MEDIUM/HIGH) | OWNER/ADMIN |
+| GET | `/ai/insights` | LLM narrative + stats (degrades to `stats_only` when disabled/unavailable) | OWNER |
+| POST | `/ai/chat` | Conversational Q&A over business data (per-user rate limit, 429/503 handled) | OWNER |
+
+All AI results cached 300s per user (`?refresh=true` bypasses); chat never cached. Volumes in litres.
+
+**Total: ~90 API endpoints across 14 routers**
 
 ---
 
@@ -523,7 +545,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ### Environment Variables (`.env`)
 ```
 NVIDIA_API_KEY=nvapi-...  # Only NVIDIA API key, not used in current codebase
+AI_LLM_DISABLED=1         # (optional) disables LLM calls; insights endpoint degrades to stats_only, chat returns 503
+AI_LLM_PROVIDER=mock      # default "mock"; future NVIDIA/OpenAI-compatible provider
+AI_CHAT_MAX_REQUESTS_PER_MINUTE=20  # sliding-window rate limit for /ai/chat (per user)
+AI_CHAT_MAX_TOKENS=512    # max LLM tokens per chat reply
 ```
+AI settings live in `app/core/config.py` (see TECH_DEBT B5 for the disabled-mode caveat).
 
 ### Test Configuration
 - `USE_ACTUAL_DB=true` (default) - tests use real PostgreSQL
@@ -632,6 +659,7 @@ NVIDIA_API_KEY=nvapi-...  # Only NVIDIA API key, not used in current codebase
 ### After Running Tests
 ```bash
 python scripts/seed.py  # Restore permanent seed data
+python scripts/seed_history.py  # Optional: 30 days of sessions/deliveries/bills/payments for the AI pages + reports
 ```
 
 ---
@@ -647,7 +675,7 @@ python scripts/seed.py  # Restore permanent seed data
 | Routes | 5 | R001-R005 (Downtown, Uptown, Industrial, Suburban, City Center) |
 | Customers | 15 | C00001-C00015 (spread across routes, Indian names) |
 | Employees | 5 | E00001-E00005 (mix of CHECKER and DELIVERY_PARTNER, some with user_id links) |
-| Subscriptions | 5 | Spread across customers with various milk types and quantities |
+| Subscriptions | 5 base (+ 10 additional) | Spread across customers with various milk types and quantities (15 total in DB) |
 
 ### Default Credentials
 | Username | Password | Role |
@@ -688,6 +716,7 @@ python scripts/seed.py  # Restore permanent seed data
 | Delivery Edit | 5 | 4 story + reopen/undo | Session reopen, undo delivery, edit, history |
 | Payment Management | 14 | 5 story + RBAC + auth | Bills, payments, outstanding calculation |
 | Reports & Analytics | 6 | 24 across 6 story areas + RBAC + CSV + auth | Route delivery, revenue, collection, consumption, token utilization, dashboard |
+| AI Business Intelligence | 5 | 53 across 5 story areas + RBAC + auth + degradation | Forecast (statistical), anomalies, churn risk, insights narrative (stats-only fallback), chat (rate limit, 503) |
 
 ### Completed (Frontend)
 
@@ -698,18 +727,20 @@ python scripts/seed.py  # Restore permanent seed data
 | Frontend Phase 5 | Delivery Management pages | ✅ Complete (specs/007: session list/create/detail, registration, reconciliation, close, reopen, edit history) |
 | Frontend Phase 6 | Payments pages | ✅ Complete (specs/008: payment list/form, bill generate/list/detail, outstanding balances, OWNER/ADMIN role guard, 7 E2E specs) |
 | Frontend Phase 7 | Reports pages | ✅ Complete (specs/009, commit 4489d6a: DashboardPage, RouteDeliveryReportPage, RevenueReportPage, ConsumptionReportPage, TokenUtilizationPage, CollectionEfficiencyPage + 5 report components + `types/reports.ts`/`api/reports.ts`/`hooks/useReports.ts`; `/` → `/reports/dashboard` redirect; RoleGuards match backend RBAC; 7 E2E specs in `frontend/e2e/reports.spec.ts`) |
+| AI Insights page | `/reports/ai` (specs/010) | ✅ Complete (Sprint 14: ForecastSection, AnomalyList, ChurnRiskTable, InsightNarrative, ChatPanel wired into `AIInsightsPage`; `types/ai.ts`/`api/ai.ts`/`hooks/useAI.ts`; nav item in `config/permissions.ts`; RoleGuard OWNER/ADMIN in `App.tsx`) |
 
 ### In Progress
 
 | Priority | Module | Reason |
 |----------|--------|--------|
 | Frontend Phase 8 | Polish & testing | React app |
+| Sprint 8 | AI BI Phase 8 (specs/010) | E2E spec (T035), quickstart validation (T036) remain |
 
 ### Not Started
 
 | Priority | Module | Reason |
 |----------|--------|--------|
-| Sprint 8 | AI Features (demand forecasting, anomaly detection) | Future |
+| Sprint 8 | AI Features (demand forecasting, anomaly detection) | ✅ Backend + frontend complete (specs/010); route optimization suggestions deferred — not in scope |
 | Sprint 10 | Docker/CI-CD/Deployment | Future |
 | Extended | Token Register (sheet-level ledger) | Not implemented |
 | Extended | Warning Log dashboard | Not implemented |
@@ -745,3 +776,6 @@ python scripts/seed.py  # Restore permanent seed data
 11. **No repository layer**: Services query models directly, which is fine for this project size
 12. **Employee InactiveRouteError class**: Defined in `exceptions/employee.py` separately from `exceptions/route.py` version - same name, different module
 13. **Route model missing String length**: `route_code` and `route_name` use `Column(String)` without length constraint in the model (schemas enforce it)
+14. **Revenue report cache-hit bug** (found Aug 4, 2026): `get_revenue` in `app/routers/reports.py` returns an **empty** envelope on JSON cache hits instead of the cached data. CSV path OK. See `TECH_DEBT.md` B3.
+15. **`UserRole` enum incomplete** (found Aug 4, 2026): `app/constants/roles.py` lacks `ADMIN` (required by reports RBAC) and `EMPLOYEE` (created by `scripts/seed.py`). Roles are stored as plain strings so nothing breaks. See `TECH_DEBT.md` B4.
+16. **CORS only allows :5173**: Playwright E2E serves the frontend on `:5174`; tests work only because they hit the API through the Vite proxy (no CORS enforcement). A real browser on `:5174` would be blocked.

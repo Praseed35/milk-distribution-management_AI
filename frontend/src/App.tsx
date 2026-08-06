@@ -14,6 +14,7 @@ import RevenueReportPage from "./pages/reports/RevenueReportPage";
 import ConsumptionReportPage from "./pages/reports/ConsumptionReportPage";
 import TokenUtilizationPage from "./pages/reports/TokenUtilizationPage";
 import CollectionEfficiencyPage from "./pages/reports/CollectionEfficiencyPage";
+import AIInsightsPage from "./pages/reports/AIInsightsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RouteListPage from "./pages/routes/RouteListPage";
 import RouteFormPage from "./pages/routes/RouteFormPage";
@@ -117,6 +118,14 @@ export default function App() {
                 element={
                   <RoleGuard roles={["OWNER", "ADMIN"]}>
                     <CollectionEfficiencyPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="reports/ai"
+                element={
+                  <RoleGuard roles={["OWNER", "ADMIN"]}>
+                    <AIInsightsPage />
                   </RoleGuard>
                 }
               />

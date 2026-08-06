@@ -1,6 +1,6 @@
 # CURRENT_STATE.md - Project Snapshot
 
-> Snapshot of the project as of August 2, 2026 — Sprints 1–7 backend complete; Frontend Phases 1–7 complete (Phase 3–4 = Sprint 10, Phase 5 Delivery Management per specs/007, Phase 6 Payment Management per specs/008, Phase 7 Reports Pages per specs/009 — Sprint 13, commit 4489d6a).
+> Snapshot of the project as of August 6, 2026 — Sprints 1–7 backend complete; Sprint 8 AI BI (specs/010) fully complete incl. E2E + quickstart (all tasks T001–T037); Frontend Phases 1–7 + AI Insights page complete (Phase 3–4 = Sprint 10, Phase 5 Delivery Management per specs/007, Phase 6 Payment Management per specs/008, Phase 7 Reports Pages per specs/009 — Sprint 13, commit 4489d6a; AI Insights per specs/010). Verified against source Aug 6, 2026.
 
 ---
 
@@ -9,13 +9,13 @@
 | Metric | Value |
 |--------|-------|
 | Total Tables | **17** (16 model files: users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_identities, token_book_issues, token_book_payments, delivery_sessions, daily_deliveries, session_edits, token_sheet_warnings, customer_bills, customer_bill_items, customer_payments) |
-| Total API Endpoints | **~85** (39 original + 26 delivery + 14 payment + 6 reports) |
-| Total Test Files | **13** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, daily_delivery, delivery_edit, payments, reports) |
-| Test Status | **379 passed, 0 failed** |
-| Sprints Code-Complete | **7** (1, 2, 3, 4-core, 5, 6, 7) |
-| Sprints Tested | **7** (1, 2, 3, 4-core, 5, 6, 7) |
-| Frontend Status | **Phases 1–7 complete** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) [Sprint 9]; Phase 3 (Subscriptions & Exceptions) + Phase 4 (Token Books) [Sprint 10]; Phase 5 (Delivery Management) [specs/007]; Phase 6 (Payment Management) [specs/008]; Phase 7 (Reports Pages) [specs/009, commit 4489d6a]. Phase 8 (Polish) pending |
-| Next Priority | **Frontend Phase 8: Polish & Testing** (all feature phases now complete) |
+| Total API Endpoints | **~90** (39 original + 26 delivery + 14 payment + 6 reports + 5 AI) |
+| Total Test Files | **14** (auth, users, routes, customers, milk_types, employees, subscriptions, delivery_exceptions, token_books, daily_delivery, delivery_edit, payments, reports, ai) |
+| Test Status | **466 passed, 0 failed** (plus pre-existing server-dependent `scripts/test_subscriptions.py`, needs live server) |
+| Sprints Code-Complete | **8** (1, 2, 3, 4-core, 5, 6, 7, 8-AI) |
+| Sprints Tested | **8** (1, 2, 3, 4-core, 5, 6, 7, 8-AI) |
+| Frontend Status | **Phases 1–7 + AI Insights complete** — Phase 1 (Setup/Auth/Layout) + Phase 2 (Master Data CRUD) [Sprint 9]; Phase 3 (Subscriptions & Exceptions) + Phase 4 (Token Books) [Sprint 10]; Phase 5 (Delivery Management) [specs/007]; Phase 6 (Payment Management) [specs/008]; Phase 7 (Reports Pages) [specs/009, commit 4489d6a]; AI Insights `/reports/ai` [specs/010]. Phase 8 (Polish) pending |
+| Next Priority | **Frontend Phase 8: Polish & Testing** (feature phases complete; AI E2E spec T035 + quickstart T036 done — full spec 010 checklist green) |
 | Database | PostgreSQL localhost:5432/milk_managemen_ai |
 | Framework | FastAPI |
 | ORM | SQLAlchemy 2.0 |
@@ -31,16 +31,16 @@
 | Directory | Files | Purpose |
 |-----------|-------|---------|
 | app/core/ | 4 | Security, auth, config, roles |
-| app/constants/ | 3 | Enum definitions (roles, shifts, statuses) |
+| app/constants/ | 3 | Enum definitions (roles, shifts, statuses) — note: UserRole enum missing ADMIN/EMPLOYEE (see TECH_DEBT B4) |
 | app/models/ | 16 (17 classes) | SQLAlchemy models (CustomerBillItem lives in customer_bill.py) |
-| app/schemas/ | 16 | Pydantic schemas (incl. delivery, payment, reports) |
-| app/routers/ | 13 | API routers (incl. deliveries, delivery_edit, payments, reports) |
-| app/services/ | 15 + reports/ (8) | Business logic (incl. delivery_*, payment_service, reports) |
-| app/exceptions/ | 11 + base | Custom exceptions (incl. delivery, delivery_edit, payment) |
-| tests/ | 13 test files + conftest | Test suite (379 tests) |
+| app/schemas/ | 16 | Pydantic schemas (incl. delivery, payment, reports, ai) |
+| app/routers/ | 14 | API routers (incl. deliveries, delivery_edit, payments, reports, ai) |
+| app/services/ | 14 + ai/ (6) + reports/ (8) | Business logic (incl. delivery_*, payment_service, ai/*, reports) |
+| app/exceptions/ | 13 + base | Custom exceptions (incl. delivery, delivery_edit, payment, ai) |
+| tests/ | 14 test files + conftest | Test suite (466 tests) |
 | alembic/versions/ | 13 | Database migrations (merged heads + payment tables + report indexes + delivery_exceptions.shift) |
-| scripts/ | 2 | Seed + test helper |
-| frontend/src/ | ~110 files | React SPA (Phases 1–7 complete; reports: 6 pages + 5 components + types/api/hooks) |
+| scripts/ | 4 | seed.py, seed_history.py, test_subscriptions.py, e2e_backend.py (E2E DB reset + API on :8001) |
+| frontend/src/ | ~115 files | React SPA (Phases 1–7 + AI Insights: 6 report pages + AI page + 5 AI components + types/api/hooks) |
 
 ---
 
@@ -53,7 +53,7 @@
 5. **Read `API_REFERENCE.md`** for endpoint details
 6. **Run tests**: `pytest` to verify everything works
 7. **Start coding**: Follow patterns in existing services/routers
-8. **Frontend work**: Phases 1–7 complete. Read `specs/009-reports-pages/tasks.md` (Phase 7 — all T001–T021 done) and `specs/004-react-frontend/tasks.md` (Phase 8 — pending) for task lists
+8. **Frontend work**: Phases 1–7 + AI Insights complete. Read `specs/010-ai-insights-module/tasks.md` (Sprint 14 AI — T001–T037 all done, incl. E2E T035 + quickstart T036) and `specs/004-react-frontend/tasks.md` (Phase 8 — pending) for task lists
 
 ---
 
@@ -131,6 +131,9 @@ class TestCreateEntity:
 # After running tests, restore seed data:
 python -m scripts.seed
 
+# Seed 30 days of operational history (sessions, deliveries, bills, payments) for the AI pages:
+python -m scripts.seed_history
+
 # Full database reset:
 alembic downgrade base
 alembic upgrade head
@@ -145,11 +148,11 @@ alembic upgrade head
 
 ## Last Updated
 
-- Date: August 2, 2026
-- Last Sprint Code Completed: Sprint 7 (Reports & Analytics) — backend; Sprint 13 (Frontend Phase 7 Reports Pages, commit 4489d6a) — frontend
-- Last Sprint Fully Tested: Sprint 7 (Reports & Analytics); Frontend E2E suite green (45 Playwright specs across 8 spec files)
-- Test Files: 13 backend + 8 frontend Playwright spec files
-- Tests: 379 backend + 45 E2E
+- Date: August 6, 2026
+- Last Sprint Code Completed: Sprint 8 AI BI (specs/010, all tasks T001–T037 incl. E2E + quickstart); frontend `npm run build` + oxlint green
+- Last Sprint Fully Tested: Sprint 8 (AI — 87 tests in `tests/test_ai.py`, incl. edge-case coverage); Frontend E2E suite green (52 Playwright specs across 9 spec files, incl. new `frontend/e2e/ai.spec.ts` + setup/owner.setup.ts)
+- Test Files: 14 backend + 9 frontend Playwright spec files
+- Tests: 466 backend + 52 E2E
 - Tables: 17
-- Frontend: Phases 1–7 complete (of 8)
-- Known Bugs: 0
+- Frontend: Phases 1–7 + AI Insights complete (Phase 8 Polish pending)
+- Known Bugs: 1 — **revenue report returns empty JSON envelope on cache hit** (`app/routers/reports.py`; see TECH_DEBT B3). All 466 backend tests + 52 E2E tests (incl. `frontend/e2e/ai.spec.ts`, T035) are green. Quickstart T036 validated (stats/RBAC/degradation/regression; live-LLM smoke is manual). `scripts/e2e_backend.py` sets both `REPORT_CACHE_DISABLED=1` and `AI_LLM_DISABLED=1`.
